@@ -4,10 +4,11 @@ const app = express();
 const sql = require('mssql');
 const config = require('./db');
 
-app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:5173'
+  origin: true, // permite el origen que venga en la petición
+  credentials: true
 }));
+
 // Importar las rutas
 const clientesRoutes = require('./routes/clientes');
 const proveedoresRoutes = require('./routes/proveedores');
