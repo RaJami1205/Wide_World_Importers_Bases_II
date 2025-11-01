@@ -1,8 +1,4 @@
-const express = require('express');
-const cors = require('cors');
-const app = express();
-const sql = require('mssql');
-const config = require('./db');
+
 
 app.use(cors({
   origin: true, // permite el origen que venga en la petición
