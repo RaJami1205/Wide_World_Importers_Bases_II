@@ -43,11 +43,10 @@ SELECT CustomerID,
 	   DeliveryAddressLine1,
        DeliveryAddressLine2,
 	   DeliveryPostalCode, 
-	   DeliveryLocation,
-	   CityName
+	   DeliveryCityID,
+	   PostalCityID
 INTO Sales.Customers
 FROM WideWorldImporters.Sales.Customers cu
-JOIN WideWorldImporters.Application.Cities ci ON (cu.DeliveryCityID = ci.CityID)
 WHERE 1=0;
 
 --Estructura Items
@@ -56,7 +55,7 @@ SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems 
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
 --Estructura Personas
 SELECT * INTO Application.People FROM WideWorldImporters.Application.People WHERE 1=0;
-
+SELECT * INTO Application.Cities FROM WideWorldImporters.Application.Cities WHERE 1=0;
 --Estructuracion de San Jose
 USE SANJOSE
 --Creacion de esquemas
@@ -67,34 +66,42 @@ CREATE SCHEMA Warehouse
 GO
 CREATE SCHEMA Purchasing
 GO
+CREATE SCHEMA Application
+GO
 
 --Estructura clientes
 SELECT CustomerID,
 	   CustomerName,
-	   BuyingGroupName,
-	   CustomerCategoryName,
+	   BuyingGroupID,
+	   CustomerCategoryID,
 	   BillToCustomerID,
 	   CreditLimit,
 	   PaymentDays,
-	   AccountOpenedDate
-
+	   AccountOpenedDate,
+	   DeliveryMethodID
 INTO Sales.Customers
-FROM WideWorldImporters.Sales.Customers cu
-JOIN WideWorldImporters.Sales.BuyingGroups bg ON (cu.BuyingGroupID = bg.BuyingGroupID)
-JOIN WideWorldImporters.Sales.CustomerCategories cg ON (cu.CustomerCategoryID = cg.CustomerCategoryID)
+FROM WideWorldImporters.Sales.Customers
 WHERE 1=0;
 
---Estructura Items
-SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
---Estructura Proveedores
-SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
-
+SELECT * INTO Sales.BuyingGroups FROM WideWorldImporters.Sales.BuyingGroups WHERE 1=0;
+SELECT * INTO Sales.CustomerCategories FROM WideWorldImporters.Sales.CustomerCategories WHERE 1=0;
 -- Pedidos y facturación
 SELECT * INTO Sales.Orders FROM WideWorldImporters.Sales.Orders WHERE 1=0;
 SELECT * INTO Sales.OrderLines FROM WideWorldImporters.Sales.OrderLines WHERE 1=0;
 
+--Estructura Items
+SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
 -- Inventario local
 SELECT * INTO Warehouse.StockItemHoldings FROM WideWorldImporters.Warehouse.StockItemHoldings WHERE 1=0;
+SELECT * INTO Warehouse.StockItemStockGroups FROM WideWorldImporters.Warehouse.StockItemStockGroups WHERE 1=0;
+SELECT * INTO Warehouse.StockGroups FROM WideWorldImporters.Warehouse.StockGroups WHERE 1=0;
+SELECT * INTO Warehouse.Colors FROM WideWorldImporters.Warehouse.Colors WHERE 1=0;
+--Estructura Proveedores
+SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
+
+SELECT * INTO Application.DeliveryMethods FROM WideWorldImporters.Application.DeliveryMethods WHERE 1=0;
+
+
 
 
 --Estructuracion de Limon
@@ -107,34 +114,40 @@ CREATE SCHEMA Warehouse
 GO
 CREATE SCHEMA Purchasing
 GO
+CREATE SCHEMA Application
+GO
 
 --Estructura clientes
 SELECT CustomerID,
 	   CustomerName,
-	   BuyingGroupName,
-	   CustomerCategoryName,
+	   BuyingGroupID,
+	   CustomerCategoryID,
 	   BillToCustomerID,
 	   CreditLimit,
 	   PaymentDays,
-	   AccountOpenedDate
-
+	   AccountOpenedDate,
+	   DeliveryMethodID
 INTO Sales.Customers
-FROM WideWorldImporters.Sales.Customers cu
-JOIN WideWorldImporters.Sales.BuyingGroups bg ON (cu.BuyingGroupID = bg.BuyingGroupID)
-JOIN WideWorldImporters.Sales.CustomerCategories cg ON (cu.CustomerCategoryID = cg.CustomerCategoryID)
+FROM WideWorldImporters.Sales.Customers
 WHERE 1=0;
 
---Estructura Items
-SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
---Estructura Proveedores
-SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
-
+SELECT * INTO Sales.BuyingGroups FROM WideWorldImporters.Sales.BuyingGroups WHERE 1=0;
+SELECT * INTO Sales.CustomerCategories FROM WideWorldImporters.Sales.CustomerCategories WHERE 1=0;
 -- Pedidos y facturación
 SELECT * INTO Sales.Orders FROM WideWorldImporters.Sales.Orders WHERE 1=0;
 SELECT * INTO Sales.OrderLines FROM WideWorldImporters.Sales.OrderLines WHERE 1=0;
 
+--Estructura Items
+SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
 -- Inventario local
 SELECT * INTO Warehouse.StockItemHoldings FROM WideWorldImporters.Warehouse.StockItemHoldings WHERE 1=0;
+SELECT * INTO Warehouse.StockItemStockGroups FROM WideWorldImporters.Warehouse.StockItemStockGroups WHERE 1=0;
+SELECT * INTO Warehouse.StockGroups FROM WideWorldImporters.Warehouse.StockGroups WHERE 1=0;
+SELECT * INTO Warehouse.Colors FROM WideWorldImporters.Warehouse.Colors WHERE 1=0;
+--Estructura Proveedores
+SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
+
+SELECT * INTO Application.DeliveryMethods FROM WideWorldImporters.Application.DeliveryMethods WHERE 1=0;
 
 
 --Migracion de Datos
@@ -145,56 +158,88 @@ GO
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
 INSERT INTO Application.People SELECT * FROM WideWorldImporters.Application.People;
-INSERT INTO Sales.Customers (CustomerID, CustomerName,PrimaryContactPersonID,AlternateContactPersonID, PhoneNumber, FaxNumber, WebsiteURL,
-       DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryLocation, CityName)
+INSERT INTO Application.Cities SELECT * FROM WideWorldImporters.Application.Cities WHERE 1=0;
+INSERT INTO Sales.Customers (CustomerID,
+	   CustomerName,
+	   PrimaryContactPersonID,
+	   AlternateContactPersonID, 
+	   PhoneNumber, 
+	   FaxNumber, 
+	   WebsiteURL, 
+	   DeliveryAddressLine1,
+       DeliveryAddressLine2,
+	   DeliveryPostalCode, 
+	   DeliveryCityID,
+	   PostalCityID)
 SELECT CustomerID, CustomerName,PrimaryContactPersonID,AlternateContactPersonID, PhoneNumber, FaxNumber, WebsiteURL,
-       DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryLocation, CityName
-FROM WideWorldImporters.Sales.Customers cu
-JOIN WideWorldImporters.Application.Cities ci ON (cu.DeliveryCityID = ci.CityID)
+       DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID
+FROM WideWorldImporters.Sales.Customers
 
 USE SANJOSE
 GO
 -- Catálogos
+INSERT INTO Sales.CustomerCategories SELECT * FROM WideWorldImporters.Sales.CustomerCategories;
+INSERT INTO Sales.BuyingGroups SELECT * FROM WideWorldImporters.Sales.BuyingGroups;
+INSERT INTO Sales.OrderLines SELECT * FROM WideWorldImporters.Sales.OrderLines;
+INSERT INTO Sales.Orders SELECT * FROM WideWorldImporters.Sales.Orders;
+INSERT INTO Warehouse.StockItemStockGroups SELECT * FROM WideWorldImporters.Warehouse.StockItemStockGroups;
+INSERT INTO Warehouse.StockGroups SELECT * FROM WideWorldImporters.Warehouse.StockGroups;
+INSERT INTO Warehouse.Colors SELECT * FROM WideWorldImporters.Warehouse.Colors;
+INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Application.DeliveryMethods;
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
 INSERT INTO Warehouse.StockItemHoldings SELECT * FROM WideWorldImporters.Warehouse.StockItemHoldings;
 
-INSERT INTO Sales.Customers (CustomerID,CustomerName,BuyingGroupName,CustomerCategoryName,BillToCustomerID,CreditLimit,PaymentDays, AccountOpenedDate) 
-SELECT CustomerID,CustomerName,
-CASE 
- WHEN BuyingGroupName IS NULL THEN ''
- ELSE BuyingGroupName
- END AS BuyingGroupName,
-CustomerCategoryName,
+INSERT INTO Sales.Customers (CustomerID,
+	   CustomerName,
+	   BuyingGroupID,
+	   CustomerCategoryID,
+	   BillToCustomerID,
+	   CreditLimit,
+	   PaymentDays,
+	   AccountOpenedDate,
+	   DeliveryMethodID) 
+SELECT CustomerID,CustomerName,BuyingGroupID,
+CustomerCategoryID,
 BillToCustomerID,
 CreditLimit,
 PaymentDays,
-AccountOpenedDate
+AccountOpenedDate,
+DeliveryMethodID
 FROM WideWorldImporters.Sales.Customers cu
-LEFT JOIN WideWorldImporters.Sales.BuyingGroups bg ON (cu.BuyingGroupID = bg.BuyingGroupID)
-LEFT JOIN WideWorldImporters.Sales.CustomerCategories cg ON (cu.CustomerCategoryID = cg.CustomerCategoryID)
 
 
 
 USE LIMON
 GO
 -- Catálogos
+INSERT INTO Sales.CustomerCategories SELECT * FROM WideWorldImporters.Sales.CustomerCategories;
+INSERT INTO Sales.BuyingGroups SELECT * FROM WideWorldImporters.Sales.BuyingGroups;
+INSERT INTO Sales.OrderLines SELECT * FROM WideWorldImporters.Sales.OrderLines;
+INSERT INTO Sales.Orders SELECT * FROM WideWorldImporters.Sales.Orders;
+INSERT INTO Warehouse.StockItemStockGroups SELECT * FROM WideWorldImporters.Warehouse.StockItemStockGroups;
+INSERT INTO Warehouse.StockGroups SELECT * FROM WideWorldImporters.Warehouse.StockGroups;
+INSERT INTO Warehouse.Colors SELECT * FROM WideWorldImporters.Warehouse.Colors;
+INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Application.DeliveryMethods;
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
 INSERT INTO Warehouse.StockItemHoldings SELECT * FROM WideWorldImporters.Warehouse.StockItemHoldings;
 
-INSERT INTO Sales.Customers (CustomerID,CustomerName,BuyingGroupName,CustomerCategoryName,BillToCustomerID,CreditLimit,PaymentDays, AccountOpenedDate) 
-SELECT CustomerID,
-CustomerName,
-CASE 
- WHEN BuyingGroupName IS NULL THEN ''
- ELSE BuyingGroupName
- END AS BuyingGroupName,
-CustomerCategoryName,
+INSERT INTO Sales.Customers (CustomerID,
+	   CustomerName,
+	   BuyingGroupID,
+	   CustomerCategoryID,
+	   BillToCustomerID,
+	   CreditLimit,
+	   PaymentDays,
+	   AccountOpenedDate,
+	   DeliveryMethodID) 
+SELECT CustomerID,CustomerName,BuyingGroupID,
+CustomerCategoryID,
 BillToCustomerID,
 CreditLimit,
 PaymentDays,
-AccountOpenedDate
+AccountOpenedDate,
+DeliveryMethodID
 FROM WideWorldImporters.Sales.Customers cu
-LEFT JOIN WideWorldImporters.Sales.BuyingGroups bg ON (cu.BuyingGroupID = bg.BuyingGroupID)
-LEFT JOIN WideWorldImporters.Sales.CustomerCategories cg ON (cu.CustomerCategoryID = cg.CustomerCategoryID)
+
