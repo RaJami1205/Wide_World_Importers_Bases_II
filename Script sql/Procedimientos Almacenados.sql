@@ -274,6 +274,7 @@ BEGIN
 END;
 GO
 
+--Corporativo
 CREATE PROCEDURE EstadisticaProveedores
     @Nombre NVARCHAR(100) = NULL,
     @Categoria NVARCHAR(100) = NULL
@@ -455,5 +456,357 @@ BEGIN
 	SELECT MAX(sih.QuantityOnHand) AS Maximo, MIN(sih.QuantityOnHand) AS Minimo
 	FROM Warehouse.StockItems si
 	JOIN Warehouse.StockItemHoldings sih ON (si.StockItemID = sih.StockItemID)
+END;
+GO
+
+CREATE PROCEDURE ObtenerNombresProveedores
+AS
+BEGIN
+	BEGIN TRANSACTION;
+	SELECT s.SupplierID,s.SupplierName
+	FROM Purchasing.Suppliers s
+	COMMIT TRANSACTION
+END
+GO;
+
+CREATE PROCEDURE ObtenerVendedores
+AS 
+BEGIN
+	BEGIN TRANSACTION;
+	SELECT DISTINCT p.PersonID,p.FullName
+	FROM Application.People p
+	WHERE p.IsSalesperson = 1
+	COMMIT TRANSACTION
+END
+GO;
+
+CREATE PROCEDURE ObtenerEmpleados
+AS 
+BEGIN
+	BEGIN TRANSACTION;
+	SELECT DISTINCT p.PersonID,p.FullName
+	FROM Application.People p
+	WHERE p.IsEmployee = 1
+	COMMIT TRANSACTION
+END
+GO;
+
+CREATE PROCEDURE ObtenerPersonas
+AS 
+BEGIN
+	BEGIN TRANSACTION;
+	SELECT DISTINCT p.PersonID,p.FullName
+	FROM Application.People p
+	WHERE p.IsEmployee = 0 AND p.IsSalesperson = 0 AND p.IsSystemUser = 0
+	COMMIT TRANSACTION
+END
+GO;
+
+CREATE PROCEDURE InsertInvoice
+(
+    @InvoiceID INT,
+    @CustomerID INT,
+    @BillToCustomerID INT,
+    @OrderID INT = NULL,
+    @DeliveryMethodID INT,
+    @ContactPersonID INT,
+    @AccountsPersonID INT,
+    @SalespersonPersonID INT,
+    @PackedByPersonID INT,
+    @InvoiceDate DATE,
+    @CustomerPurchaseOrderNumber NVARCHAR(20) = NULL,
+    @IsCreditNote BIT,
+    @CreditNoteReason NVARCHAR(400) = NULL,
+    @Comments NVARCHAR(400) = NULL,
+    @DeliveryInstructions NVARCHAR(400) = NULL,
+    @InternalComments NVARCHAR(400) = NULL,
+    @TotalDryItems INT,
+    @TotalChillerItems INT,
+    @DeliveryRun NVARCHAR(5) = NULL,
+    @RunPosition NVARCHAR(5) = NULL,
+    @ReturnedDeliveryData NVARCHAR(400) = NULL,
+    @ConfirmedDeliveryTime DATETIME2 = NULL,
+    @ConfirmedReceivedBy NVARCHAR(4000) = NULL,
+    @LastEditedBy INT
+)
+AS
+BEGIN
+	BEGIN TRANSACTION;
+    INSERT INTO Sales.Invoices
+    (
+        InvoiceID, CustomerID, BillToCustomerID, OrderID, DeliveryMethodID,
+        ContactPersonID, AccountsPersonID, SalespersonPersonID, PackedByPersonID,
+        InvoiceDate, CustomerPurchaseOrderNumber, IsCreditNote, CreditNoteReason,
+        Comments, DeliveryInstructions, InternalComments, TotalDryItems, TotalChillerItems,
+        DeliveryRun, RunPosition, ReturnedDeliveryData, ConfirmedDeliveryTime,
+        ConfirmedReceivedBy, LastEditedBy, LastEditedWhen
+    )
+    VALUES
+    (
+        @InvoiceID, @CustomerID, @BillToCustomerID, @OrderID, @DeliveryMethodID,
+        @ContactPersonID, @AccountsPersonID, @SalespersonPersonID, @PackedByPersonID,
+        @InvoiceDate, @CustomerPurchaseOrderNumber, @IsCreditNote, @CreditNoteReason,
+        @Comments, @DeliveryInstructions, @InternalComments, @TotalDryItems, @TotalChillerItems,
+        @DeliveryRun, @RunPosition, @ReturnedDeliveryData, @ConfirmedDeliveryTime,
+        @ConfirmedReceivedBy, @LastEditedBy, SYSDATETIME()
+    );
+	COMMIT TRANSACTION
+END;
+GO
+
+CREATE PROCEDURE GetInvoiceByID
+(
+    @InvoiceID INT
+)
+AS
+BEGIN
+	BEGIN TRANSACTION;
+    SELECT *
+    FROM Sales.Invoices
+    WHERE InvoiceID = @InvoiceID;
+
+    SELECT *
+    FROM Sales.InvoiceLines
+    WHERE InvoiceID = @InvoiceID;
+	COMMIT TRANSACTION;
+END;
+GO
+
+CREATE PROCEDURE GetInvoices
+AS
+BEGIN
+	BEGIN TRANSACTION;
+    SELECT *
+    FROM Sales.Invoices
+    ORDER BY InvoiceDate DESC;
+	COMMIT TRANSACTION
+END;
+GO
+CREATE PROCEDURE GetPackageTypes
+AS
+BEGIN
+	BEGIN TRANSACTION;
+	SELECT p.PackageTypeID, p.PackageTypeName
+	FROM Warehouse.PackageTypes p
+	COMMIT TRANSACTION
+END
+GO
+
+CREATE OR ALTER PROCEDURE UpdateInvoice
+(
+    @InvoiceID INT,
+    @CustomerID INT,
+    @BillToCustomerID INT,
+    @OrderID INT = NULL,
+    @DeliveryMethodID INT,
+    @ContactPersonID INT,
+    @AccountsPersonID INT,
+    @SalespersonPersonID INT,
+    @PackedByPersonID INT,
+    @InvoiceDate DATE,
+    @CustomerPurchaseOrderNumber NVARCHAR(20) = NULL,
+    @IsCreditNote BIT,
+    @CreditNoteReason NVARCHAR(400) = NULL,
+    @Comments NVARCHAR(400) = NULL,
+    @DeliveryInstructions NVARCHAR(400) = NULL,
+    @InternalComments NVARCHAR(400) = NULL,
+    @TotalDryItems INT,
+    @TotalChillerItems INT,
+    @DeliveryRun NVARCHAR(5) = NULL,
+    @RunPosition NVARCHAR(5) = NULL,
+    @ReturnedDeliveryData NVARCHAR(400) = NULL,
+    @ConfirmedDeliveryTime DATETIME2 = NULL,
+    @ConfirmedReceivedBy NVARCHAR(4000) = NULL,
+    @LastEditedBy INT
+)
+AS
+BEGIN
+	BEGIN TRANSACTION;
+    UPDATE Sales.Invoices
+    SET
+        CustomerID = @CustomerID,
+        BillToCustomerID = @BillToCustomerID,
+        OrderID = @OrderID,
+        DeliveryMethodID = @DeliveryMethodID,
+        ContactPersonID = @ContactPersonID,
+        AccountsPersonID = @AccountsPersonID,
+        SalespersonPersonID = @SalespersonPersonID,
+        PackedByPersonID = @PackedByPersonID,
+        InvoiceDate = @InvoiceDate,
+        CustomerPurchaseOrderNumber = @CustomerPurchaseOrderNumber,
+        IsCreditNote = @IsCreditNote,
+        CreditNoteReason = @CreditNoteReason,
+        Comments = @Comments,
+        DeliveryInstructions = @DeliveryInstructions,
+        InternalComments = @InternalComments,
+        TotalDryItems = @TotalDryItems,
+        TotalChillerItems = @TotalChillerItems,
+        DeliveryRun = @DeliveryRun,
+        RunPosition = @RunPosition,
+        ReturnedDeliveryData = @ReturnedDeliveryData,
+        ConfirmedDeliveryTime = @ConfirmedDeliveryTime,
+        ConfirmedReceivedBy = @ConfirmedReceivedBy,
+        LastEditedBy = @LastEditedBy,
+        LastEditedWhen = SYSDATETIME()
+    WHERE InvoiceID = @InvoiceID;
+	COMMIT TRANSACTION
+END;
+GO
+
+CREATE PROCEDURE DeleteInvoice
+(
+    @InvoiceID INT
+)
+AS
+BEGIN
+    BEGIN TRANSACTION;
+
+    DELETE FROM Sales.InvoiceLines
+    WHERE InvoiceID = @InvoiceID;
+
+    DELETE FROM Sales.Invoices
+    WHERE InvoiceID = @InvoiceID;
+
+    COMMIT;
+END;
+GO
+
+CREATE PROCEDURE InsertInvoiceLine
+(
+    @InvoiceLineID INT,
+    @InvoiceID INT,
+    @StockItemID INT,
+    @Description NVARCHAR(100),
+    @PackageTypeID INT,
+    @Quantity INT,
+    @UnitPrice DECIMAL(18,2),
+    @TaxRate DECIMAL(18,3),
+    @TaxAmount DECIMAL(18,2),
+    @LineProfit DECIMAL(18,2),
+    @ExtendedPrice DECIMAL(18,2),
+    @LastEditedBy INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM Warehouse.StockItemHoldings
+            WHERE StockItemID = @StockItemID
+        )
+        BEGIN
+            RAISERROR('El artículo de inventario no existe.', 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        DECLARE @QtyOnHand INT;
+
+        SELECT @QtyOnHand = QuantityOnHand
+        FROM Warehouse.StockItemHoldings
+        WHERE StockItemID = @StockItemID;
+
+        IF @QtyOnHand < @Quantity
+        BEGIN
+            RAISERROR('Inventario insuficiente: disponible %d, requerido %d.', 
+                      16, 1, @QtyOnHand, @Quantity);
+            ROLLBACK;
+            RETURN;
+        END
+
+        UPDATE Warehouse.StockItemHoldings
+        SET 
+            QuantityOnHand = QuantityOnHand - @Quantity,
+            LastEditedBy = @LastEditedBy,
+            LastEditedWhen = SYSDATETIME()
+        WHERE StockItemID = @StockItemID;
+
+        INSERT INTO Sales.InvoiceLines
+        (
+            InvoiceLineID, InvoiceID, StockItemID, Description, PackageTypeID,
+            Quantity, UnitPrice, TaxRate, TaxAmount, LineProfit,
+            ExtendedPrice, LastEditedBy, LastEditedWhen
+        )
+        VALUES
+        (
+            @InvoiceLineID, @InvoiceID, @StockItemID, @Description, @PackageTypeID,
+            @Quantity, @UnitPrice, @TaxRate, @TaxAmount, @LineProfit,
+            @ExtendedPrice, @LastEditedBy, SYSDATETIME()
+        );
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK;
+
+        DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrSeverity INT = ERROR_SEVERITY();
+
+        RAISERROR(@ErrMsg, @ErrSeverity, 1);
+    END CATCH
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE GetInvoiceLines
+(
+    @InvoiceID INT
+)
+AS
+BEGIN
+    SELECT *
+    FROM Sales.InvoiceLines
+    WHERE InvoiceID = @InvoiceID;
+END;
+GO
+
+CREATE PROCEDURE UpdateInvoiceLine
+(
+    @InvoiceLineID INT,
+    @StockItemID INT,
+    @Description NVARCHAR(100),
+    @PackageTypeID INT,
+    @Quantity INT,
+    @UnitPrice DECIMAL(18,2),
+    @TaxRate DECIMAL(18,3),
+    @TaxAmount DECIMAL(18,2),
+    @LineProfit DECIMAL(18,2),
+    @ExtendedPrice DECIMAL(18,2),
+    @LastEditedBy INT
+)
+AS
+BEGIN
+    UPDATE Sales.InvoiceLines
+    SET
+        StockItemID = @StockItemID,
+        Description = @Description,
+        PackageTypeID = @PackageTypeID,
+        Quantity = @Quantity,
+        UnitPrice = @UnitPrice,
+        TaxRate = @TaxRate,
+        TaxAmount = @TaxAmount,
+        LineProfit = @LineProfit,
+        ExtendedPrice = @ExtendedPrice,
+        LastEditedBy = @LastEditedBy,
+        LastEditedWhen = SYSDATETIME()
+    WHERE InvoiceLineID = @InvoiceLineID;
+END;
+GO
+
+CREATE PROCEDURE DeleteInvoiceLine
+(
+    @InvoiceLineID INT
+)
+AS
+BEGIN
+	BEGIN TRANSACTION;
+    DELETE FROM Sales.InvoiceLines
+    WHERE InvoiceLineID = @InvoiceLineID;
+	COMMIT TRANSACTION;
 END;
 GO

@@ -53,6 +53,8 @@ WHERE 1=0;
 SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
 --Estructura Proveedores
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
+SELECT * INTO Purchasing.PurchaseOrders FROM WideWorldImporters.Purchasing.PurchaseOrders WHERE 1=0;
+SELECT * INTO Purchasing.PurchaseOrderLines FROM WideWorldImporters.Purchasing.PurchaseOrderLines WHERE 1=0;
 --Estructura Personas
 SELECT * INTO Application.People FROM WideWorldImporters.Application.People WHERE 1=0;
 SELECT * INTO Application.Cities FROM WideWorldImporters.Application.Cities WHERE 1=0;
@@ -96,6 +98,7 @@ SELECT * INTO Warehouse.StockItemHoldings FROM WideWorldImporters.Warehouse.Stoc
 SELECT * INTO Warehouse.StockItemStockGroups FROM WideWorldImporters.Warehouse.StockItemStockGroups WHERE 1=0;
 SELECT * INTO Warehouse.StockGroups FROM WideWorldImporters.Warehouse.StockGroups WHERE 1=0;
 SELECT * INTO Warehouse.Colors FROM WideWorldImporters.Warehouse.Colors WHERE 1=0;
+SELECT * INTO Warehouse.PackageTypes FROM WideWorldImporters.Warehouse.PackageTypes WHERE 1=0;
 --Estructura Proveedores
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
 
@@ -144,6 +147,7 @@ SELECT * INTO Warehouse.StockItemHoldings FROM WideWorldImporters.Warehouse.Stoc
 SELECT * INTO Warehouse.StockItemStockGroups FROM WideWorldImporters.Warehouse.StockItemStockGroups WHERE 1=0;
 SELECT * INTO Warehouse.StockGroups FROM WideWorldImporters.Warehouse.StockGroups WHERE 1=0;
 SELECT * INTO Warehouse.Colors FROM WideWorldImporters.Warehouse.Colors WHERE 1=0;
+SELECT * INTO Warehouse.PackageTypes FROM WideWorldImporters.Warehouse.PackageTypes WHERE 1=0;
 --Estructura Proveedores
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
 
@@ -189,6 +193,7 @@ INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Applica
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
 INSERT INTO Warehouse.StockItemHoldings SELECT * FROM WideWorldImporters.Warehouse.StockItemHoldings;
+INSERT INTO Warehouse.PackageTypes SELECT * FROM WideWorldImporters.Warehouse.PackageTypes;
 
 INSERT INTO Sales.Customers (CustomerID,
 	   CustomerName,
@@ -224,6 +229,7 @@ INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Applica
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
 INSERT INTO Warehouse.StockItemHoldings SELECT * FROM WideWorldImporters.Warehouse.StockItemHoldings;
+INSERT INTO Warehouse.PackageTypes SELECT * FROM WideWorldImporters.Warehouse.PackageTypes;
 
 INSERT INTO Sales.Customers (CustomerID,
 	   CustomerName,
