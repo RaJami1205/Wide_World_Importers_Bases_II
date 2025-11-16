@@ -16,46 +16,59 @@ BEGIN
 END;
 GO 
 
-CREATE OR ALTER PROCEDURE InformacionCliente
-    @CustomerID INT = NULL,
-    @Nombre NVARCHAR(100) = NULL
-AS
-BEGIN
-    SELECT 
-        c.CustomerName AS NombreCliente,
-		cu.CustomerCategoryName AS NombreCategoria,
-		bg.BuyingGroupName AS GrupoCompra,
-		cc.ContactoPrincipal,
-		cc.ContactoAlternativo,
-		c.BillToCustomerID AS ClienteAFacturar,
-		dm.DeliveryMethodName AS MetodoEntrega,
-        cc.PhoneNumber,
-        cc.FaxNumber,
-        cc.WebsiteURL,
-		cc.Direccion,
-        cc.CiudadEntrega,
-        c.CreditLimit,
-        c.PaymentDays,
-        c.AccountOpenedDate
-    FROM Sales.Customers c
-	LEFT JOIN Sales.CustomerCategories cu ON cu.CustomerCategoryID = c.CustomerCategoryID
-	LEFT JOIN Sales.BuyingGroups bg ON bg.BuyingGroupID = c.BuyingGroupID
-	LEFT JOIN Application.DeliveryMethods dm ON dm.DeliveryMethodID = c.DeliveryMethodID
-    JOIN OPENQUERY(Corporativo,
-        'SELECT c.CustomerID, c.CustomerName, p1.FullName AS ContactoPrincipal, ISNULL(p2.FullName,'''') AS ContactoAlternativo, CONCAT(ISNULL(DeliveryAddressLine1,''''),ISNULL(DeliveryAddressLine2,'''')) AS Direccion, 
-		ci.CityName AS CiudadEntrega, c.PhoneNumber, c.FaxNumber, c.WebsiteURL
-         FROM CORPORATIVO.Sales.Customers c
-		 JOIN CORPORATIVO.Application.People p1 ON c.PrimaryContactPersonID = p1.PersonID
-		 LEFT JOIN CORPORATIVO.Application.People p2 ON c.AlternateContactPersonID = p2.PersonID
-		 JOIN CORPORATIVO.Application.Cities ci ON c.PostalCityID = ci.CityID'
-		 ) cc ON cc.CustomerID = c.CustomerID
-    WHERE 
-        (@CustomerID IS NULL OR c.CustomerID = @CustomerID)
-        AND (@Nombre IS NULL OR cc.CustomerName LIKE '%' + @Nombre + '%')
-    ORDER BY cc.CustomerName;
 
+CREATE PROCEDURE InformacionCliente
+	@Nombre NVARCHAR(100)
+
+AS 
+BEGIN
+	SELECT cu.CustomerName AS NombreCliente, 
+	ca.CustomerCategoryName AS CategoriaCliente,
+	bg.BuyingGroupName AS GrupoCompra, 
+	CASE 
+		WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NOT NULL THEN CONCAT(pe1.FullName,',',pe1.EmailAddress)
+		WHEN pe1.FullName IS NULL AND pe1.EmailAddress IS NOT NULL THEN pe1.EmailAddress
+		WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NULL THEN pe1.FullName
+		ELSE NULL
+		END AS ContactoPrincipal,
+	CASE
+		WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NOT NULL THEN CONCAT(pe2.FullName,',',pe2.EmailAddress)
+		WHEN pe2.FullName IS NULL AND pe2.EmailAddress IS NOT NULL THEN pe2.EmailAddress
+		WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NULL THEN pe2.FullName
+		ELSE NULL
+		END AS ContactoAlternativo,
+	cu.BillToCustomerID AS ClienteAFacturar, 
+	dm.DeliveryMethodName AS MetodoEntrega,
+	ci.CityName AS CiudadEntrega,
+	cu.DeliveryPostalCode AS CodigoPostal,
+	cu.FaxNumber AS Fax,
+	cu.PhoneNumber AS Telefono,
+	cu.PaymentDays AS DiasPagar,
+	cu.WebsiteURL AS SitioWeb,
+	CASE 
+		WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN CONCAT(cu.DeliveryAddressLine1,',',cu.DeliveryAddressLine2)
+		WHEN cu.DeliveryAddressLine1 IS NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN cu.DeliveryAddressLine2
+		WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NULL THEN cu.DeliveryAddressLine1
+		ELSE NULL
+		END AS Direccion,
+	CASE
+		WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NOT NULL THEN CONCAT(cu.PostalAddressLine1,',',cu.PostalAddressLine2)
+		WHEN cu.PostalAddressLine1 IS NULL AND cu.PostalAddressLine2 IS NOT NULL THEN cu.PostalAddressLine2
+		WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NULL THEN cu.PostalAddressLine1
+		ELSE NULL
+		END AS DireccionPostal,
+	cu.DeliveryLocation AS MapaLocalizacion
+	FROM Sales.Customers cu
+	LEFT JOIN Sales.CustomerCategories ca ON (cu.CustomerCategoryID = ca.CustomerCategoryID)
+	LEFT JOIN Sales.BuyingGroups bg ON (cu.BuyingGroupID = bg.BuyingGroupID)
+	LEFT JOIN Application.DeliveryMethods dm ON (cu.DeliveryMethodID = dm.DeliveryMethodID)
+	LEFT JOIN Application.Cities ci ON (cu.DeliveryCityID = ci.CityID)
+	LEFT JOIN Application.People pe1 ON (cu.PrimaryContactPersonID = pe1.PersonID)
+	LEFT JOIN Application.People pe2 ON (cu.AlternateContactPersonID = pe2.PersonID)
+	WHERE cu.CustomerName = @Nombre
 END;
 GO
+
 
 CREATE PROCEDURE ObtenerProveedores
 	@Nombre NVARCHAR(100)= NULL,
