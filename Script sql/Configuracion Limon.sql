@@ -74,6 +74,7 @@ SELECT * INTO Warehouse.Colors FROM WideWorldImporters.Warehouse.Colors WHERE 1=
 SELECT * INTO Warehouse.PackageTypes FROM WideWorldImporters.Warehouse.PackageTypes WHERE 1=0;
 --Estructura Proveedores
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
+SELECT * INTO Purchasing.SupplierCategories FROM WideWorldImporters.Purchasing.SupplierCategories WHERE 1=0;
 
 SELECT * INTO Application.DeliveryMethods FROM WideWorldImporters.Application.DeliveryMethods WHERE 1=0;
 
@@ -89,10 +90,12 @@ INSERT INTO Warehouse.Colors SELECT * FROM WideWorldImporters.Warehouse.Colors;
 INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Application.DeliveryMethods;
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
+INSERT INTO Purchasing.SupplierCategories SELECT * FROM WideWorldImporters.Purchasing.SupplierCategories;
 INSERT INTO Warehouse.StockItemHoldings SELECT * FROM WideWorldImporters.Warehouse.StockItemHoldings;
 INSERT INTO Warehouse.PackageTypes SELECT * FROM WideWorldImporters.Warehouse.PackageTypes;
 INSERT INTO Sales.Invoices SELECT * FROM WideWorldImporters.Sales.Invoices;
 INSERT INTO Sales.InvoiceLines SELECT * FROM WideWorldImporters.Sales.InvoiceLines;
+
 
 INSERT INTO Sales.Customers (CustomerID,
 	   CustomerName,
