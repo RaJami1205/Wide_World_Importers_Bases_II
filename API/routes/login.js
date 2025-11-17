@@ -1,8 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { sql, connect } = require('../db');
+const crypto = require('crypto');
 
-// SIEMPRE trabajamos con el servidor corporativo
+// Función para hashear la contraseña igual que SQL Server (SHA2_512)
+function hashPassword(password) {
+  return crypto.createHash('sha512').update(password, 'utf8').digest();
+}
+
 const SERVIDOR = 'corporativo';
 
 router.post('/', async (req, res) => {
@@ -12,13 +17,21 @@ router.post('/', async (req, res) => {
     if (!username || !password)
       return res.status(400).json({ error: "Faltan credenciales" });
 
+    // Conectar al servidor Corporativo
     await connect(SERVIDOR);
 
-    const result = await sql.query(`
+    // Hashear contraseña ingresada
+    const hashedPass = hashPassword(password);
+
+    const request = new sql.Request();
+    request.input("username", sql.NVarChar, username);
+    request.input("password", sql.VarBinary, hashedPass);
+
+    const result = await request.query(`
       SELECT iduser, username, fullname, rol, email, active
       FROM Usuarios
-      WHERE username = '${username}' 
-        AND password = '${password}'
+      WHERE username = @username
+      AND password = @password;
     `);
 
     if (result.recordset.length === 0)
@@ -34,7 +47,7 @@ router.post('/', async (req, res) => {
       username: user.username,
       fullname: user.fullname,
       email: user.email,
-      rol: user.rol   // 0 = ADMIN, 1 = CORPORATIVO
+      rol: user.rol  // 0 = ADMIN, 1 = CORPORATIVO
     });
 
   } catch (err) {
