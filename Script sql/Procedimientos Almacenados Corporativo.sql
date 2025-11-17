@@ -725,7 +725,7 @@ BEGIN
         JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.OrderLines') ol ON o.OrderID = ol.OrderID
         JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.Customers') c ON o.CustomerID = c.CustomerID
         JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Application.DeliveryMethods') d ON c.DeliveryMethodID = d.DeliveryMethodID
-        WHERE (@Flag IN (1,2))
+        WHERE (@Flag=1 OR @Flag=2)
           AND (@NumeroFactura IS NULL OR CAST(o.OrderID AS NVARCHAR(20)) LIKE '%' + CAST(@NumeroFactura AS NVARCHAR(20)) + '%')
           AND (@NombreCliente IS NULL OR c.CustomerName LIKE '%' + @NombreCliente + '%')
           AND (@FechaInicial IS NULL OR o.OrderDate >= @FechaInicial)
@@ -746,7 +746,7 @@ BEGIN
         JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.OrderLines') ol ON o.OrderID = ol.OrderID
         JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.Customers') c ON o.CustomerID = c.CustomerID
         JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Application.DeliveryMethods') d ON c.DeliveryMethodID = d.DeliveryMethodID
-        WHERE (@Flag IN (1,3))
+        WHERE (@Flag=1 OR @Flag=3)
           AND (@NumeroFactura IS NULL OR CAST(o.OrderID AS NVARCHAR(20)) LIKE '%' + CAST(@NumeroFactura AS NVARCHAR(20)) + '%')
           AND (@NombreCliente IS NULL OR c.CustomerName LIKE '%' + @NombreCliente + '%')
           AND (@FechaInicial IS NULL OR o.OrderDate >= @FechaInicial)
@@ -754,5 +754,359 @@ BEGIN
         GROUP BY o.OrderID, o.OrderDate, c.CustomerName, d.DeliveryMethodName
     ) AS Ventas
     ORDER BY NombreCliente ASC, Monto DESC;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE InformacionCliente
+    @Nombre NVARCHAR(100),
+    @Flag INT = 1  -- 1 = SANJOSE, 2 = LIMON
+AS
+BEGIN
+    IF @Flag = 1
+    BEGIN
+        SELECT cu.CustomerName AS NombreCliente,
+               ca.CustomerCategoryName AS CategoriaCliente,
+               bg.BuyingGroupName AS GrupoCompra,
+               CASE 
+                   WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NOT NULL THEN CONCAT(pe1.FullName, ',', pe1.EmailAddress)
+                   WHEN pe1.FullName IS NULL AND pe1.EmailAddress IS NOT NULL THEN pe1.EmailAddress
+                   WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NULL THEN pe1.FullName
+                   ELSE NULL
+               END AS ContactoPrincipal,
+               CASE
+                   WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NOT NULL THEN CONCAT(pe2.FullName, ',', pe2.EmailAddress)
+                   WHEN pe2.FullName IS NULL AND pe2.EmailAddress IS NOT NULL THEN pe2.EmailAddress
+                   WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NULL THEN pe2.FullName
+                   ELSE NULL
+               END AS ContactoAlternativo,
+               cu_suc.BillToCustomerID AS ClienteAFacturar,
+               dm.DeliveryMethodName AS MetodoEntrega,
+               ci.CityName AS CiudadEntrega,
+               cu.DeliveryPostalCode AS CodigoPostal,
+               cu.FaxNumber AS Fax,
+               cu.PhoneNumber AS Telefono,
+               cu_suc.PaymentDays AS DiasPagar,
+               cu.WebsiteURL AS SitioWeb,
+               CASE 
+                   WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN CONCAT(cu.DeliveryAddressLine1, ',', cu.DeliveryAddressLine2)
+                   WHEN cu.DeliveryAddressLine1 IS NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN cu.DeliveryAddressLine2
+                   WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NULL THEN cu.DeliveryAddressLine1
+                   ELSE NULL
+               END AS Direccion,
+               CASE
+                   WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NOT NULL THEN CONCAT(cu.PostalAddressLine1, ',', cu.PostalAddressLine2)
+                   WHEN cu.PostalAddressLine1 IS NULL AND cu.PostalAddressLine2 IS NOT NULL THEN cu.PostalAddressLine2
+                   WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NULL THEN cu.PostalAddressLine1
+                   ELSE NULL
+               END AS DireccionPostal,
+               cu.DeliveryLocation AS MapaLocalizacion,
+               'SANJOSE' AS Sucursal
+        FROM CORPORATIVO.Sales.Customers cu
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.CustomerCategories') ca
+               ON cu.CustomerID = ca.CustomerCategoryID
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.BuyingGroups') bg
+               ON cu.CustomerID = bg.BuyingGroupID
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.Customers') cu_suc
+               ON cu.CustomerID = cu_suc.CustomerID
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Application.DeliveryMethods') dm
+               ON cu_suc.DeliveryMethodID = dm.DeliveryMethodID
+        LEFT JOIN Application.Cities ci
+               ON cu.DeliveryCityID = ci.CityID
+        LEFT JOIN Application.People pe1
+               ON cu.PrimaryContactPersonID = pe1.PersonID
+        LEFT JOIN Application.People pe2
+               ON cu.AlternateContactPersonID = pe2.PersonID
+        WHERE cu.CustomerName = @Nombre
+    END
+-- Limon
+    IF @Flag = 2
+    BEGIN
+        SELECT cu.CustomerName AS NombreCliente,
+               ca.CustomerCategoryName AS CategoriaCliente,
+               bg.BuyingGroupName AS GrupoCompra,
+               CASE 
+                   WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NOT NULL THEN CONCAT(pe1.FullName, ',', pe1.EmailAddress)
+                   WHEN pe1.FullName IS NULL AND pe1.EmailAddress IS NOT NULL THEN pe1.EmailAddress
+                   WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NULL THEN pe1.FullName
+                   ELSE NULL
+               END AS ContactoPrincipal,
+               CASE
+                   WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NOT NULL THEN CONCAT(pe2.FullName, ',', pe2.EmailAddress)
+                   WHEN pe2.FullName IS NULL AND pe2.EmailAddress IS NOT NULL THEN pe2.EmailAddress
+                   WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NULL THEN pe2.FullName
+                   ELSE NULL
+               END AS ContactoAlternativo,
+               cu_suc.BillToCustomerID AS ClienteAFacturar,
+               dm.DeliveryMethodName AS MetodoEntrega,
+               ci.CityName AS CiudadEntrega,
+               cu.DeliveryPostalCode AS CodigoPostal,
+               cu.FaxNumber AS Fax,
+               cu.PhoneNumber AS Telefono,
+               cu_suc.PaymentDays AS DiasPagar,
+               cu.WebsiteURL AS SitioWeb,
+               CASE 
+                   WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN CONCAT(cu.DeliveryAddressLine1, ',', cu.DeliveryAddressLine2)
+                   WHEN cu.DeliveryAddressLine1 IS NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN cu.DeliveryAddressLine2
+                   WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NULL THEN cu.DeliveryAddressLine1
+                   ELSE NULL
+               END AS Direccion,
+               CASE
+                   WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NOT NULL THEN CONCAT(cu.PostalAddressLine1, ',', cu.PostalAddressLine2)
+                   WHEN cu.PostalAddressLine1 IS NULL AND cu.PostalAddressLine2 IS NOT NULL THEN cu.PostalAddressLine2
+                   WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NULL THEN cu.PostalAddressLine1
+                   ELSE NULL
+               END AS DireccionPostal,
+               cu.DeliveryLocation AS MapaLocalizacion,
+               'LIMON' AS Sucursal
+        FROM CORPORATIVO.Sales.Customers cu
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.CustomerCategories') ca
+               ON cu.CustomerID = ca.CustomerCategoryID
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.BuyingGroups') bg
+               ON cu.CustomerID = bg.BuyingGroupID
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.Customers') cu_suc
+               ON cu.CustomerID = cu_suc.CustomerID
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Application.DeliveryMethods') dm
+               ON cu_suc.DeliveryMethodID = dm.DeliveryMethodID
+        LEFT JOIN Application.Cities ci
+               ON cu.DeliveryCityID = ci.CityID
+        LEFT JOIN Application.People pe1
+               ON cu.PrimaryContactPersonID = pe1.PersonID
+        LEFT JOIN Application.People pe2
+               ON cu.AlternateContactPersonID = pe2.PersonID
+        WHERE cu.CustomerName = @Nombre
+    END
+END;
+GO
+
+
+CREATE PROCEDURE InformacionProveedor
+	@Nombre NVARCHAR(100)
+
+AS 
+BEGIN
+	SELECT su.SupplierReference AS CodigoProveedor,
+	su.SupplierName AS NombreProveedor, 
+	sc.SupplierCategoryName AS CategoriaProveedor,
+	CASE 
+		WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NOT NULL THEN CONCAT(pe1.FullName,',',pe1.EmailAddress)
+		WHEN pe1.FullName IS NULL AND pe1.EmailAddress IS NOT NULL THEN pe1.EmailAddress
+		WHEN pe1.FullName IS NOT NULL AND pe1.EmailAddress IS NULL THEN pe1.FullName
+		ELSE NULL
+		END AS ContactoPrincipal,
+	CASE
+		WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NOT NULL THEN CONCAT(pe2.FullName,',',pe2.EmailAddress)
+		WHEN pe2.FullName IS NULL AND pe2.EmailAddress IS NOT NULL THEN pe2.EmailAddress
+		WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NULL THEN pe2.FullName
+		ELSE NULL
+		END AS ContactoAlternativo,
+	dm.DeliveryMethodName AS MetodoEntrega,
+	ci.CityName AS CiudadEntrega,
+	su.DeliveryPostalCode AS CodigoPostal,
+	su.FaxNumber AS FAX,
+	su.PhoneNumber AS Telefono,
+	su.WebsiteURL AS SitioWeb,
+	CASE 
+		WHEN su.DeliveryAddressLine1 IS NOT NULL AND su.DeliveryAddressLine2 IS NOT NULL THEN CONCAT(su.DeliveryAddressLine1,',',su.DeliveryAddressLine2)
+		WHEN su.DeliveryAddressLine1 IS NULL AND su.DeliveryAddressLine2 IS NOT NULL THEN su.DeliveryAddressLine2
+		WHEN su.DeliveryAddressLine1 IS NOT NULL AND su.DeliveryAddressLine2 IS NULL THEN su.DeliveryAddressLine1
+		ELSE NULL
+		END AS Direccion,
+	CASE
+		WHEN su.PostalAddressLine1 IS NOT NULL AND su.PostalAddressLine2 IS NOT NULL THEN CONCAT(su.PostalAddressLine1,',',su.PostalAddressLine2)
+		WHEN su.PostalAddressLine1 IS NULL AND su.PostalAddressLine2 IS NOT NULL THEN su.PostalAddressLine2
+		WHEN su.PostalAddressLine1 IS NOT NULL AND su.PostalAddressLine2 IS NULL THEN su.PostalAddressLine1
+		ELSE NULL
+		END AS DireccionPostal,
+	su.DeliveryLocation AS MapaLocalizacion,
+	su.BankAccountName AS NombreBanco,
+	su.BankAccountNumber AS NumeroCuentaCorriente,
+	su.PaymentDays AS DiasPagar
+	FROM Purchasing.Suppliers su
+	LEFT JOIN Purchasing.SupplierCategories sc ON (su.SupplierCategoryID = sc.SupplierCategoryID)
+	LEFT JOIN Application.DeliveryMethods dm ON (su.DeliveryMethodID = dm.DeliveryMethodID)
+	LEFT JOIN Application.Cities ci ON (su.DeliveryCityID = ci.CityID)
+	LEFT JOIN Application.People pe1 ON (su.PrimaryContactPersonID = pe1.PersonID)
+	LEFT JOIN Application.People pe2 ON (su.AlternateContactPersonID = pe2.PersonID)
+	WHERE su.SupplierName = @Nombre
+END;
+GO
+
+CREATE OR ALTER PROCEDURE InformacionInventario
+    @Nombre NVARCHAR(100) = NULL,
+    @Flag INT = 1 -- 1 = Todas, 2 = SanJose, 3 = Limon
+AS
+BEGIN
+    -- San José
+    SELECT si.StockItemName AS NombreProducto,
+           su.SupplierName AS NombreProveedor,
+           c.ColorName AS Color,
+           sg1.StockGroupName AS UnitPackage,
+           sg2.StockGroupName AS OuterPackage,
+           sih.QuantityOnHand AS CantidadProducto,
+           si.Brand AS Marcas,
+           si.Size AS Tallas,
+           si.TaxRate AS Impuesto,
+           si.UnitPrice AS PrecioUnitario,
+           'SANJOSE' AS Sucursal
+    FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Warehouse.StockItems') si
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Warehouse.StockGroups') sg1
+           ON si.UnitPackageID = sg1.StockGroupID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Warehouse.StockGroups') sg2
+           ON si.OuterPackageID = sg2.StockGroupID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Warehouse.StockItemHoldings') sih
+           ON si.StockItemID = sih.StockItemID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Warehouse.Colors') c
+           ON si.ColorID = c.ColorID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Purchasing.Suppliers') su
+           ON si.SupplierID = su.SupplierID
+    WHERE (@Nombre IS NULL OR si.StockItemName = @Nombre)
+      AND (@Flag = 1 OR @Flag = 2)
+
+    UNION ALL
+
+    -- Limón
+    SELECT si.StockItemName AS NombreProducto,
+           su.SupplierName AS NombreProveedor,
+           c.ColorName AS Color,
+           sg1.StockGroupName AS UnitPackage,
+           sg2.StockGroupName AS OuterPackage,
+           sih.QuantityOnHand AS CantidadProducto,
+           si.Brand AS Marcas,
+           si.Size AS Tallas,
+           si.TaxRate AS Impuesto,
+           si.UnitPrice AS PrecioUnitario,
+           'LIMON' AS Sucursal
+    FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Warehouse.StockItems') si
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Warehouse.StockGroups') sg1
+           ON si.UnitPackageID = sg1.StockGroupID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Warehouse.StockGroups') sg2
+           ON si.OuterPackageID = sg2.StockGroupID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Warehouse.StockItemHoldings') sih
+           ON si.StockItemID = sih.StockItemID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Warehouse.Colors') c
+           ON si.ColorID = c.ColorID
+    LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Purchasing.Suppliers') su
+           ON si.SupplierID = su.SupplierID
+    WHERE (@Nombre IS NULL OR si.StockItemName = @Nombre)
+      AND (@Flag = 1 OR @Flag = 3)
+END;
+GO
+
+CREATE OR ALTER PROCEDURE InformacionVentas
+    @NumeroFactura INT = NULL,
+    @Flag INT = 1 -- 1 = Todas, 2 = SanJose, 3 = Limon
+AS
+BEGIN
+    -- Encabezado Factura
+    SELECT *
+    FROM
+    (
+		--San Jose
+        SELECT 
+            o.OrderID AS NumeroFactura,
+            c.CustomerName AS NombreCliente,
+            d.DeliveryMethodName AS MetodoEntrega,
+            o.CustomerPurchaseOrderNumber AS NumeroOrden,
+            CASE 
+                WHEN p1.FullName IS NOT NULL AND p1.EmailAddress IS NOT NULL THEN CONCAT(p1.FullName,',',p1.EmailAddress)
+                WHEN p1.FullName IS NULL AND p1.EmailAddress IS NOT NULL THEN p1.EmailAddress
+                WHEN p1.FullName IS NOT NULL AND p1.EmailAddress IS NULL THEN p1.FullName
+                ELSE NULL
+            END AS PersonaContacto,
+            CASE
+                WHEN p2.FullName IS NOT NULL AND p2.EmailAddress IS NOT NULL THEN CONCAT(p2.FullName,',',p2.EmailAddress)
+                WHEN p2.FullName IS NULL AND p2.EmailAddress IS NOT NULL THEN p2.EmailAddress
+                WHEN p2.FullName IS NOT NULL AND p2.EmailAddress IS NULL THEN p2.FullName
+                ELSE NULL
+            END AS Vendedor,
+            o.OrderDate AS Fecha,
+            o.DeliveryInstructions AS InstruccionesEntrega,
+            'SANJOSE' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.Orders') o
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.Customers') c
+            ON o.CustomerID = c.CustomerID
+        LEFT JOIN Application.DeliveryMethods d
+            ON c.DeliveryMethodID = d.DeliveryMethodID
+        LEFT JOIN Application.People p1
+            ON o.ContactPersonID = p1.PersonID
+        LEFT JOIN Application.People p2
+            ON o.SalespersonPersonID = p2.PersonID
+        WHERE (@NumeroFactura IS NULL OR o.OrderID = @NumeroFactura)
+          AND (@Flag = 1 OR @Flag = 2)
+
+        UNION ALL
+
+        -- Limón
+        SELECT 
+            o.OrderID AS NumeroFactura,
+            c.CustomerName AS NombreCliente,
+            d.DeliveryMethodName AS MetodoEntrega,
+            o.CustomerPurchaseOrderNumber AS NumeroOrden,
+            CASE 
+                WHEN p1.FullName IS NOT NULL AND p1.EmailAddress IS NOT NULL THEN CONCAT(p1.FullName,',',p1.EmailAddress)
+                WHEN p1.FullName IS NULL AND p1.EmailAddress IS NOT NULL THEN p1.EmailAddress
+                WHEN p1.FullName IS NOT NULL AND p1.EmailAddress IS NULL THEN p1.FullName
+                ELSE NULL
+            END AS PersonaContacto,
+            CASE
+                WHEN p2.FullName IS NOT NULL AND p2.EmailAddress IS NOT NULL THEN CONCAT(p2.FullName,',',p2.EmailAddress)
+                WHEN p2.FullName IS NULL AND p2.EmailAddress IS NOT NULL THEN p2.EmailAddress
+                WHEN p2.FullName IS NOT NULL AND p2.EmailAddress IS NULL THEN p2.FullName
+                ELSE NULL
+            END AS Vendedor,
+            o.OrderDate AS Fecha,
+            o.DeliveryInstructions AS InstruccionesEntrega,
+            'LIMON' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.Orders') o
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.Customers') c
+            ON o.CustomerID = c.CustomerID
+        LEFT JOIN Application.DeliveryMethods d
+            ON c.DeliveryMethodID = d.DeliveryMethodID
+        LEFT JOIN Application.People p1
+            ON o.ContactPersonID = p1.PersonID
+        LEFT JOIN Application.People p2
+            ON o.SalespersonPersonID = p2.PersonID
+        WHERE (@NumeroFactura IS NULL OR o.OrderID = @NumeroFactura)
+          AND (@Flag = 1 OR @Flag = 3)
+    ) AS Encabezado
+    ORDER BY NumeroFactura;
+
+    -- Detalle Factura
+    SELECT *
+    FROM
+    (
+        -- San José
+        SELECT 
+            ol.OrderID AS NumeroFactura,
+            si.StockItemName AS NombreProducto, 
+            ol.Quantity AS Cantidad, 
+            ol.UnitPrice AS PrecioUnitario, 
+            ol.TaxRate / 100 AS ImpuestoAplicado,
+            (ol.UnitPrice * (ol.TaxRate / 100)) AS MontoImpuesto,
+            (ol.Quantity * ol.UnitPrice) * (1 + ol.TaxRate / 100) AS TotalLinea,
+            'SANJOSE' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.OrderLines') ol
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Warehouse.StockItems') si
+            ON ol.StockItemID = si.StockItemID
+        WHERE (@NumeroFactura IS NULL OR ol.OrderID = @NumeroFactura)
+          AND (@Flag = 1 OR @Flag = 2)
+        UNION ALL
+        -- Limón
+        SELECT 
+            ol.OrderID AS NumeroFactura,
+            si.StockItemName AS NombreProducto, 
+            ol.Quantity AS Cantidad, 
+            ol.UnitPrice AS PrecioUnitario, 
+            ol.TaxRate / 100 AS ImpuestoAplicado,
+            (ol.UnitPrice * (ol.TaxRate / 100)) AS MontoImpuesto,
+            (ol.Quantity * ol.UnitPrice) * (1 + ol.TaxRate / 100) AS TotalLinea,
+            'LIMON' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.OrderLines') ol
+        LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Warehouse.StockItems') si
+            ON ol.StockItemID = si.StockItemID
+        WHERE (@NumeroFactura IS NULL OR ol.OrderID = @NumeroFactura)
+          AND (@Flag = 1 OR @Flag = 3)
+    ) AS Detalle
+    ORDER BY NumeroFactura, NombreProducto;
 END;
 GO

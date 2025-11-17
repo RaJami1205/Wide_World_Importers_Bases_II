@@ -49,11 +49,13 @@ WHERE 1=0;
 SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
 --Estructura Proveedores
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
+SELECT * INTO Purchasing.SupplierCategories FROM WideWorldImporters.Purchasing.SupplierCategories WHERE 1=0;
 SELECT * INTO Purchasing.PurchaseOrders FROM WideWorldImporters.Purchasing.PurchaseOrders WHERE 1=0;
 SELECT * INTO Purchasing.PurchaseOrderLines FROM WideWorldImporters.Purchasing.PurchaseOrderLines WHERE 1=0;
 --Estructura Personas
 SELECT * INTO Application.People FROM WideWorldImporters.Application.People WHERE 1=0;
 SELECT * INTO Application.Cities FROM WideWorldImporters.Application.Cities WHERE 1=0;
+SELECT * INTO Application.DeliveryMethods FROM WideWorldImporters.Application.DeliveryMethods WHERE 1=0;
 
 --Migracion de Datos
 -- Catálogos
@@ -61,8 +63,10 @@ INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.Stoc
 ALTER TABLE Warehouse.StockItems
 ADD CONSTRAINT PK_StockItems PRIMARY KEY (StockItemID);
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
+INSERT INTO Purchasing.SupplierCategories SELECT * FROM WideWorldImporters.Purchasing.SupplierCategories;
 INSERT INTO Application.People SELECT * FROM WideWorldImporters.Application.People;
 INSERT INTO Application.Cities SELECT * FROM WideWorldImporters.Application.Cities;
+INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Application.DeliveryMethods;
 INSERT INTO Purchasing.PurchaseOrders SELECT * FROM WideWorldImporters.Purchasing.PurchaseOrders;
 INSERT INTO Purchasing.PurchaseOrderLines SELECT * FROM WideWorldImporters.Purchasing.PurchaseOrderLines;
 INSERT INTO Sales.Customers (CustomerID,
@@ -83,3 +87,4 @@ INSERT INTO Sales.Customers (CustomerID,
 SELECT CustomerID, CustomerName,PrimaryContactPersonID,AlternateContactPersonID, PhoneNumber, FaxNumber, WebsiteURL,
        DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID, PostalAddressLine1, PostalAddressLine2, DeliveryLocation
 FROM WideWorldImporters.Sales.Customers
+
