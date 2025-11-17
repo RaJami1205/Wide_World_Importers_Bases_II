@@ -2,34 +2,6 @@
 CREATE DATABASE SANJOSE
 GO
 USE SANJOSE
---Configuracion Linked-Servers
---De San Jose a Corporativo
-EXEC sp_addlinkedserver 
-    @server = 'Corporativo', 
-    @srvproduct = '',
-    @provider = 'SQLNCLI',
-    @datasrc = 'Corporativo';
-
-EXEC sp_addlinkedsrvlogin 
-    @rmtsrvname = 'Corporativo',
-    @useself = 'false',
-    @locallogin = NULL,
-    @rmtuser = 'sa',
-    @rmtpassword = 'Contrasena1234';
-
---De San Jose a Limon
-EXEC sp_addlinkedserver 
-    @server = 'Sucursal_Limon', 
-    @srvproduct = '',
-    @provider = 'SQLNCLI',
-    @datasrc = 'Sucursal_Limon';
-
-EXEC sp_addlinkedsrvlogin 
-    @rmtsrvname = 'Sucursal_Limon',
-    @useself = 'false',
-    @locallogin = NULL,
-    @rmtuser = 'sa',
-    @rmtpassword = 'Contrasena1234';
 --Creacion de esquemas
 GO
 CREATE SCHEMA Sales
@@ -64,6 +36,8 @@ SELECT * INTO Sales.Invoices FROM WideWorldImporters.Sales.Invoices WHERE 1=0;
 SELECT * INTO Sales.InvoiceLines FROM WideWorldImporters.Sales.InvoiceLines WHERE 1=0;
 --Estructura Items
 SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
+ALTER TABLE Warehouse.StockItems
+ADD CONSTRAINT PK_StockItems PRIMARY KEY (StockItemID);
 -- Inventario local
 SELECT * INTO Warehouse.StockItemHoldings FROM WideWorldImporters.Warehouse.StockItemHoldings WHERE 1=0;
 SELECT * INTO Warehouse.StockItemStockGroups FROM WideWorldImporters.Warehouse.StockItemStockGroups WHERE 1=0;

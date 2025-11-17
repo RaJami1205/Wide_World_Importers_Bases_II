@@ -2,37 +2,6 @@
 CREATE DATABASE CORPORATIVO
 GO
 USE CORPORATIVO
-
---Configuracion Linked-Servers
---De Corporativo a Limon
-EXEC sp_addlinkedserver 
-    @server = 'Sucursal_Limon', 
-    @srvproduct = '',
-    @provider = 'SQLNCLI',
-    @datasrc = 'Sucursal_Limon';
-
-EXEC sp_addlinkedsrvlogin 
-    @rmtsrvname = 'Sucursal_Limon',
-    @useself = 'false',
-    @locallogin = NULL,
-    @rmtuser = 'sa',
-    @rmtpassword = 'Contrasena1234';
-
---De Corporativo a SanJose
-EXEC sp_addlinkedserver 
-    @server = 'Sucursal_SanJose', 
-    @srvproduct = '',
-    @provider = 'SQLNCLI',
-    @datasrc = 'Sucursal_SanJose';
-
-EXEC sp_addlinkedsrvlogin 
-    @rmtsrvname = 'Sucursal_SanJose',
-    @useself = 'false',
-    @locallogin = NULL,
-    @rmtuser = 'sa',
-    @rmtpassword = 'Contrasena1234';
-
-
 -- Tabla Usuarios
 -- rol = 0: Corporativo
 -- rol = 1: Administrador
@@ -68,7 +37,10 @@ SELECT CustomerID,
        DeliveryAddressLine2,
 	   DeliveryPostalCode, 
 	   DeliveryCityID,
-	   PostalCityID
+	   PostalCityID,
+	   PostalAddressLine1,
+	   PostalAddressLine2,
+	   DeliveryLocation
 INTO Sales.Customers
 FROM WideWorldImporters.Sales.Customers cu
 WHERE 1=0;
@@ -86,6 +58,8 @@ SELECT * INTO Application.Cities FROM WideWorldImporters.Application.Cities WHER
 --Migracion de Datos
 -- Catálogos
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
+ALTER TABLE Warehouse.StockItems
+ADD CONSTRAINT PK_StockItems PRIMARY KEY (StockItemID);
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
 INSERT INTO Application.People SELECT * FROM WideWorldImporters.Application.People;
 INSERT INTO Application.Cities SELECT * FROM WideWorldImporters.Application.Cities;
@@ -102,7 +76,10 @@ INSERT INTO Sales.Customers (CustomerID,
        DeliveryAddressLine2,
 	   DeliveryPostalCode, 
 	   DeliveryCityID,
-	   PostalCityID)
+	   PostalCityID,
+	   PostalAddressLine1,
+	   PostalAddressLine2,
+	   DeliveryLocation)
 SELECT CustomerID, CustomerName,PrimaryContactPersonID,AlternateContactPersonID, PhoneNumber, FaxNumber, WebsiteURL,
-       DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID
+       DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID, PostalAddressLine1, PostalAddressLine2, DeliveryLocation
 FROM WideWorldImporters.Sales.Customers

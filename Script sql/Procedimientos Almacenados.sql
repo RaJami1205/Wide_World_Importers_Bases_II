@@ -1,4 +1,4 @@
-CREATE PROCEDURE ObtenerClientes
+CREATE OR ALTER PROCEDURE ObtenerClientes
 	@Nombre NVARCHAR(100)= NULL,
 	@Categoria NVARCHAR(100)= NULL,
 	@MetodoEntrega NVARCHAR(100)= NULL
@@ -41,13 +41,13 @@ BEGIN
 	LEFT JOIN Sales.CustomerCategories cu ON cu.CustomerCategoryID = c.CustomerCategoryID
 	LEFT JOIN Sales.BuyingGroups bg ON bg.BuyingGroupID = c.BuyingGroupID
 	LEFT JOIN Application.DeliveryMethods dm ON dm.DeliveryMethodID = c.DeliveryMethodID
-    JOIN OPENQUERY(Corporativo,
+    JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],
         'SELECT c.CustomerID, c.CustomerName, p1.FullName AS ContactoPrincipal, ISNULL(p2.FullName,'''') AS ContactoAlternativo, CONCAT(ISNULL(DeliveryAddressLine1,''''),ISNULL(DeliveryAddressLine2,'''')) AS Direccion, 
-		ci.CityName AS CiudadEntrega, c.PhoneNumber, c.FaxNumber, c.WebsiteURL
+		ci.CityName AS CiudadEntrega, c.PhoneNumber, c.FaxNumber, c.WebsiteURL, CONCAT(ISNULL (c.PostalAddressLine1,''''),ISNULL(c.PostalAddressLine2,'''')) AS DireccionPostal , c.DeliveryLocation 
          FROM CORPORATIVO.Sales.Customers c
-		 JOIN CORPORATIVO.Application.People p1 ON c.PrimaryContactPersonID = p1.PersonID
+		 LEFT JOIN CORPORATIVO.Application.People p1 ON c.PrimaryContactPersonID = p1.PersonID
 		 LEFT JOIN CORPORATIVO.Application.People p2 ON c.AlternateContactPersonID = p2.PersonID
-		 JOIN CORPORATIVO.Application.Cities ci ON c.PostalCityID = ci.CityID'
+		 LEFT JOIN CORPORATIVO.Application.Cities ci ON c.PostalCityID = ci.CityID'
 		 ) cc ON cc.CustomerID = c.CustomerID
     WHERE 
         (@CustomerID IS NULL OR c.CustomerID = @CustomerID)
@@ -56,7 +56,6 @@ BEGIN
 
 END;
 GO
-
 CREATE PROCEDURE ObtenerProveedores
 	@Nombre NVARCHAR(100)= NULL,
 	@Categoria NVARCHAR(100)= NULL,
@@ -120,9 +119,9 @@ BEGIN
 	FROM Purchasing.Suppliers su
 	LEFT JOIN Purchasing.SupplierCategories sc ON (su.SupplierCategoryID = sc.SupplierCategoryID)
 	LEFT JOIN Application.DeliveryMethods dm ON (su.DeliveryMethodID = dm.DeliveryMethodID)
-	LEFT JOIN Application.Cities ci ON (su.DeliveryCityID = ci.CityID)
-	LEFT JOIN Application.People pe1 ON (su.PrimaryContactPersonID = pe1.PersonID)
-	LEFT JOIN Application.People pe2 ON (su.AlternateContactPersonID = pe2.PersonID)
+	LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.Cities ci ') ci ON (su.DeliveryCityID = ci.CityID)
+	LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.People pe1') pe1 ON (su.PrimaryContactPersonID = pe1.PersonID)
+	LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.People pe2') pe2 ON (su.AlternateContactPersonID = pe2.PersonID)
 	WHERE su.SupplierName = @Nombre
 END;
 GO
@@ -242,8 +241,8 @@ BEGIN
 	FROM Sales.Orders o
 	LEFT JOIN Sales.Customers c ON (o.CustomerID = c.CustomerID)
 	LEFT JOIN Application.DeliveryMethods d ON (c.DeliveryMethodID = d.DeliveryMethodID)
-	LEFT JOIN Application.People p1 ON (o.ContactPersonID = p1.PersonID)
-	LEFT JOIN Application.People p2 ON (o.SalespersonPersonID = p2.PersonID)
+	LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.People') p1 ON (o.ContactPersonID = p1.PersonID)
+	LEFT JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.People') p2 ON (o.SalespersonPersonID = p2.PersonID)
 	WHERE (@NumeroFactura IS NULL OR o.OrderID = @NumeroFactura);
 
 	--Detalle Factura--
@@ -277,41 +276,42 @@ BEGIN
 	SELECT s.SupplierID,s.SupplierName
 	FROM Purchasing.Suppliers s
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
-CREATE PROCEDURE ObtenerVendedores
+CREATE OR ALTER PROCEDURE ObtenerVendedores
 AS 
 BEGIN
 	BEGIN TRANSACTION;
 	SELECT DISTINCT p.PersonID,p.FullName
-	FROM Application.People p
+	FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.People') p
 	WHERE p.IsSalesperson = 1
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
-CREATE PROCEDURE ObtenerEmpleados
+
+CREATE OR ALTER PROCEDURE ObtenerEmpleados
 AS 
 BEGIN
 	BEGIN TRANSACTION;
 	SELECT DISTINCT p.PersonID,p.FullName
-	FROM Application.People p
+	FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.People') p
 	WHERE p.IsEmployee = 1
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
 CREATE PROCEDURE ObtenerPersonas
 AS 
 BEGIN
 	BEGIN TRANSACTION;
 	SELECT DISTINCT p.PersonID,p.FullName
-	FROM Application.People p
+	FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_CORPORATIVO],'SELECT * FROM CORPORATIVO.Application.People') p
 	WHERE p.IsEmployee = 0 AND p.IsSalesperson = 0 AND p.IsSystemUser = 0
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
 CREATE PROCEDURE InsertInvoice
 (

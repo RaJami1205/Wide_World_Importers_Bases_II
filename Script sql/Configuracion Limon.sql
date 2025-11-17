@@ -2,36 +2,6 @@
 CREATE DATABASE LIMON
 GO
 USE LIMON
---Configuracion Linked-Servers
---De Limon a Corporativo
-EXEC sp_addlinkedserver 
-    @server = 'Corporativo', 
-    @srvproduct = '',
-    @provider = 'SQLNCLI',
-    @datasrc = 'Corporativo';
-
-EXEC sp_addlinkedsrvlogin 
-    @rmtsrvname = 'Corporativo',
-    @useself = 'false',
-    @locallogin = NULL,
-    @rmtuser = 'sa',
-    @rmtpassword = 'Contrasena1234';
-
---De Limon a San Jose
-
-EXEC sp_addlinkedserver 
-    @server = 'Sucursal_SanJose', 
-    @srvproduct = '',
-    @provider = 'SQLNCLI',
-    @datasrc = 'Sucursal_SanJose';
-
-EXEC sp_addlinkedsrvlogin 
-    @rmtsrvname = 'Sucursal_SanJose',
-    @useself = 'false',
-    @locallogin = NULL,
-    @rmtuser = 'sa',
-    @rmtpassword = 'Contrasena1234';
-
 --Creacion de esquemas
 GO
 CREATE SCHEMA Sales
@@ -42,7 +12,6 @@ CREATE SCHEMA Purchasing
 GO
 CREATE SCHEMA Application
 GO
-
 --Estructura clientes
 SELECT CustomerID,
 	   CustomerName,
@@ -66,6 +35,8 @@ SELECT * INTO Sales.Invoices FROM WideWorldImporters.Sales.Invoices WHERE 1=0;
 SELECT * INTO Sales.InvoiceLines FROM WideWorldImporters.Sales.InvoiceLines WHERE 1=0;
 --Estructura Items
 SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
+ALTER TABLE Warehouse.StockItems
+ADD CONSTRAINT PK_StockItems PRIMARY KEY (StockItemID);
 -- Inventario local
 SELECT * INTO Warehouse.StockItemHoldings FROM WideWorldImporters.Warehouse.StockItemHoldings WHERE 1=0;
 SELECT * INTO Warehouse.StockItemStockGroups FROM WideWorldImporters.Warehouse.StockItemStockGroups WHERE 1=0;

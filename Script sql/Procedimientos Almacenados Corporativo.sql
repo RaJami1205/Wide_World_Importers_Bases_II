@@ -11,7 +11,7 @@ BEGIN
         StockItemName NVARCHAR(100),
         UnitPrice DECIMAL(18,2)
     );
-
+--DESKTOP-BE6OQQA\NODO_CORPORATIVO
     CREATE TABLE #StockGroups (
         StockGroupID INT,
         StockGroupName NVARCHAR(100)
@@ -22,17 +22,16 @@ BEGIN
         StockGroupID INT
     );
 
-
     INSERT INTO #StockItems
     SELECT StockItemID, StockItemName, UnitPrice
     FROM (
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
                 'SELECT StockItemID, StockItemName, UnitPrice 
                  FROM SanJose.Warehouse.StockItems')
         WHERE @Flag = 1 OR @Flag = 2
 
         UNION ALL
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
                 'SELECT StockItemID, StockItemName, UnitPrice 
                  FROM Limon.Warehouse.StockItems')
         WHERE @Flag = 1 OR @Flag = 3
@@ -41,13 +40,13 @@ BEGIN
 
     INSERT INTO #StockGroups
     SELECT StockGroupID, StockGroupName
-    FROM (SELECT * FROM OPENQUERY(Sucursal_SanJose,
+    FROM (SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
                 'SELECT StockGroupID, StockGroupName 
                  FROM SanJose.Warehouse.StockGroups')
         WHERE @Flag = 1 OR @Flag = 2
 
         UNION ALL
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
                 'SELECT StockGroupID, StockGroupName 
                  FROM Limon.Warehouse.StockGroups')
         WHERE @Flag = 1 OR @Flag = 3
@@ -56,13 +55,13 @@ BEGIN
 
     INSERT INTO #StockItemStockGroups
     SELECT StockItemID, StockGroupID
-    FROM (SELECT * FROM OPENQUERY(Sucursal_SanJose,
+    FROM (SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
                 'SELECT StockItemID, StockGroupID 
                  FROM SanJose.Warehouse.StockItemStockGroups')
         WHERE @Flag = 1 OR @Flag = 2
 
         UNION ALL
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
                 'SELECT StockItemID, StockGroupID 
                  FROM Limon.Warehouse.StockItemStockGroups')
         WHERE @Flag = 1 OR @Flag = 3
@@ -143,22 +142,22 @@ BEGIN
     BEGIN
         INSERT INTO @Invoices
         SELECT InvoiceID, CustomerID
-        FROM OPENQUERY(Sucursal_SanJose,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, CustomerID FROM SanJose.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
         SELECT InvoiceID, LineProfit
-        FROM OPENQUERY(Sucursal_SanJose,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, LineProfit FROM SanJose.Sales.InvoiceLines');
 
         INSERT INTO @Customers_Sucursal
         SELECT CustomerID, CustomerCategoryID
-        FROM OPENQUERY(Sucursal_SanJose,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT CustomerID, CustomerCategoryID FROM SanJose.Sales.Customers');
 
         INSERT INTO @CustomerCategories
         SELECT CustomerCategoryID, CustomerCategoryName
-        FROM OPENQUERY(Sucursal_SanJose,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT CustomerCategoryID, CustomerCategoryName FROM SanJose.Sales.CustomerCategories');
     END
 
@@ -166,22 +165,22 @@ BEGIN
     BEGIN
         INSERT INTO @Invoices
         SELECT InvoiceID, CustomerID
-        FROM OPENQUERY(Sucursal_Limon,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, CustomerID FROM Limon.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
         SELECT InvoiceID, LineProfit
-        FROM OPENQUERY(Sucursal_Limon,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, LineProfit FROM Limon.Sales.InvoiceLines');
 
         INSERT INTO @Customers_Sucursal
         SELECT CustomerID, CustomerCategoryID
-        FROM OPENQUERY(Sucursal_Limon,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT CustomerID, CustomerCategoryID FROM Limon.Sales.Customers');
 
         INSERT INTO @CustomerCategories
         SELECT CustomerCategoryID, CustomerCategoryName
-        FROM OPENQUERY(Sucursal_Limon,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT CustomerCategoryID, CustomerCategoryName FROM Limon.Sales.CustomerCategories');
     END
 
@@ -256,30 +255,30 @@ BEGIN
     BEGIN
         -- SAN JOSE
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, InvoiceDate FROM SanJose.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, StockItemID, UnitPrice, Quantity, TaxRate 
              FROM SanJose.Sales.InvoiceLines');
 
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT StockItemID, StockItemName, TypicalWeightPerUnit
               FROM SanJose.Warehouse.StockItems');
         -- LIMON
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, InvoiceDate FROM Limon.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, StockItemID, UnitPrice, Quantity, TaxRate 
              FROM Limon.Sales.InvoiceLines');
 
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT StockItemID, StockItemName, TypicalWeightPerUnit
               FROM Limon.Warehouse.StockItems');
     END
@@ -287,16 +286,16 @@ BEGIN
     IF @Flag = 2
     BEGIN
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, InvoiceDate FROM SanJose.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, StockItemID, UnitPrice, Quantity, TaxRate 
              FROM SanJose.Sales.InvoiceLines');
 
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT StockItemID, StockItemName, TypicalWeightPerUnit
               FROM SanJose.Warehouse.StockItems');
     END
@@ -305,16 +304,16 @@ BEGIN
     IF @Flag = 3
     BEGIN
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, InvoiceDate FROM Limon.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, StockItemID, UnitPrice, Quantity, TaxRate 
              FROM Limon.Sales.InvoiceLines');
 
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT StockItemID, StockItemName, TypicalWeightPerUnit
               FROM Limon.Warehouse.StockItems');
     END;
@@ -369,23 +368,23 @@ BEGIN
     IF @Flag = 1
     BEGIN
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, CustomerID, InvoiceDate FROM SanJose.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, Quantity, UnitPrice, TaxRate FROM SanJose.Sales.InvoiceLines');
 
         INSERT INTO @Customers
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT CustomerID, CustomerName FROM SanJose.Sales.Customers');
 
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, CustomerID, InvoiceDate FROM Limon.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, Quantity, UnitPrice, TaxRate FROM Limon.Sales.InvoiceLines');
 
     END
@@ -394,11 +393,11 @@ BEGIN
     IF @Flag = 2
     BEGIN
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, CustomerID, InvoiceDate FROM SanJose.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, Quantity, UnitPrice, TaxRate FROM SanJose.Sales.InvoiceLines');
 
     END
@@ -407,11 +406,11 @@ BEGIN
     IF @Flag = 3
     BEGIN
         INSERT INTO @Invoices
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, CustomerID, InvoiceDate FROM Limon.Sales.Invoices');
 
         INSERT INTO @InvoiceLines
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, Quantity, UnitPrice, TaxRate FROM Limon.Sales.InvoiceLines');
     END;
 
@@ -474,12 +473,12 @@ BEGIN
     IF @Flag = 1
     BEGIN
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT StockItemID, StockItemName, UnitPrice, TaxRate  
              FROM Limon.Warehouse.StockItems');
 
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT StockItemID, StockItemName, UnitPrice, TaxRate  
              FROM SanJose.Warehouse.StockItems');
     END
@@ -487,7 +486,7 @@ BEGIN
     IF @Flag = 2
     BEGIN
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_SanJose,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT StockItemID, StockItemName, UnitPrice, TaxRate  
              FROM SanJose.Warehouse.StockItems');
     END
@@ -495,7 +494,7 @@ BEGIN
     IF @Flag = 3
     BEGIN
         INSERT INTO @StockItems
-        SELECT * FROM OPENQUERY(Sucursal_Limon,
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT StockItemID, StockItemName, UnitPrice, TaxRate  
              FROM Limon.Warehouse.StockItems');
     END;
@@ -542,23 +541,6 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE ObtenerClientes
-	@Nombre NVARCHAR(100)= NULL,
-	@Categoria NVARCHAR(100)= NULL,
-	@MetodoEntrega NVARCHAR(100)= NULL
-
-AS
-BEGIN
-	SELECT cu.CustomerName AS NombreCliente, ca.CustomerCategoryName AS CategoriaCliente, dm.DeliveryMethodName AS MetodoEntrega
-	FROM Sales.Customers cu
-	JOIN Sales.CustomerCategories ca ON (cu.CustomerCategoryID = ca.CustomerCategoryID)
-	JOIN Application.DeliveryMethods dm ON (cu.DeliveryMethodID = dm.DeliveryMethodID)
-	WHERE ( @Nombre IS NULL OR cu.CustomerName LIKE '%' + @Nombre + '%') AND
-	( @Categoria IS NULL OR ca.CustomerCategoryName LIKE '%' + @Categoria + '%') AND
-	( @MetodoEntrega IS NULL OR dm.DeliveryMethodName LIKE '%' + @MetodoEntrega + '%')
-	ORDER BY cu.CustomerName ASC
-END;
-GO 
 
 CREATE PROCEDURE GetClientes
     @CustomerID INT = NULL,
@@ -594,20 +576,11 @@ BEGIN
         DeliveryMethodID INT,
         Sucursal NVARCHAR(20)
     );
-
-    INSERT INTO @CustomersCorporativo
-    SELECT *
-    FROM OPENQUERY(Corporativo,
-        'SELECT CustomerID, CustomerName, PrimaryContactPersonID, AlternateContactPersonID,
-                PhoneNumber, FaxNumber, WebsiteURL, DeliveryAddressLine1,
-                DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID
-         FROM CORPORATIVO.Sales.Customers');
-
     IF @Flag =1 OR @Flag = 2
     BEGIN
         INSERT INTO @CustomersSucursales
         SELECT *, 'SANJOSE'
-        FROM OPENQUERY(Sucursal_SanJose,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT CustomerID, CustomerName, BuyingGroupID, CustomerCategoryID,
                     BillToCustomerID, CreditLimit, PaymentDays, AccountOpenedDate,
                     DeliveryMethodID
@@ -619,7 +592,7 @@ BEGIN
     BEGIN
         INSERT INTO @CustomersSucursales
         SELECT *, 'LIMON'
-        FROM OPENQUERY(Sucursal_Limon,
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT CustomerID, CustomerName, BuyingGroupID, CustomerCategoryID,
                     BillToCustomerID, CreditLimit, PaymentDays, AccountOpenedDate,
                     DeliveryMethodID
@@ -654,10 +627,4 @@ BEGIN
 END;
 GO
 
-        SELECT c.CustomerID, c.CustomerName, p1.FullName AS ContactoPrincipal, ISNULL(p2.FullName,'''') AS ContactoAlternativo, CONCAT(ISNULL(DeliveryAddressLine1,''''),ISNULL(DeliveryAddressLine2,'''')) AS Direccion, 
-		ci.CityName AS CiudadEntrega, c.PhoneNumber, c.FaxNumber, c.WebsiteURL
-         FROM CORPORATIVO.Sales.Customers c
-		 JOIN CORPORATIVO.Application.People p1 ON c.PrimaryContactPersonID = p1.PersonID
-		 LEFT JOIN CORPORATIVO.Application.People p2 ON c.AlternateContactPersonID = p2.PersonID
-		 JOIN CORPORATIVO.Application.Cities ci ON c.PostalCityID = ci.CityID
 		 
