@@ -58,7 +58,7 @@ SELECT * INTO Application.Cities FROM WideWorldImporters.Application.Cities WHER
 SELECT * INTO Application.DeliveryMethods FROM WideWorldImporters.Application.DeliveryMethods WHERE 1=0;
 
 --Migracion de Datos
--- Catálogos
+-- Catï¿½logos
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 ALTER TABLE Warehouse.StockItems
 ADD CONSTRAINT PK_StockItems PRIMARY KEY (StockItemID);
@@ -88,3 +88,10 @@ SELECT CustomerID, CustomerName,PrimaryContactPersonID,AlternateContactPersonID,
        DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID, PostalAddressLine1, PostalAddressLine2, DeliveryLocation
 FROM WideWorldImporters.Sales.Customers
 
+INSERT INTO Usuarios (username, fullname, email, password, rol, active)
+VALUES 
+('admin', 'Administrador General', 'admin@empresa.com',
+ HASHBYTES('SHA2_512', 'admin123'), 0, 1),
+
+('corporativo', 'Usuario Corporativo', 'corporativo@empresa.com',
+ HASHBYTES('SHA2_512', 'corporativo123'), 1, 1);
