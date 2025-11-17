@@ -44,11 +44,7 @@ SELECT CustomerID,
        DeliveryAddressLine2,
 	   DeliveryPostalCode, 
 	   DeliveryCityID,
-	   PostalCityID,
-	   PostalAddressLine1,
-	   PostalAddressLine2,
-	   DeliveryLocation
-	   
+	   PostalCityID
 INTO Sales.Customers
 FROM WideWorldImporters.Sales.Customers cu
 WHERE 1=0;
@@ -62,8 +58,6 @@ SELECT * INTO Purchasing.PurchaseOrderLines FROM WideWorldImporters.Purchasing.P
 --Estructura Personas
 SELECT * INTO Application.People FROM WideWorldImporters.Application.People WHERE 1=0;
 SELECT * INTO Application.Cities FROM WideWorldImporters.Application.Cities WHERE 1=0;
-
-
 --Estructuracion de San Jose
 USE SANJOSE
 --Creacion de esquemas
@@ -86,8 +80,7 @@ SELECT CustomerID,
 	   CreditLimit,
 	   PaymentDays,
 	   AccountOpenedDate,
-	   DeliveryMethodID,
-	   DeliveryPostalCode,
+	   DeliveryMethodID
 INTO Sales.Customers
 FROM WideWorldImporters.Sales.Customers
 WHERE 1=0;
@@ -97,8 +90,6 @@ SELECT * INTO Sales.CustomerCategories FROM WideWorldImporters.Sales.CustomerCat
 -- Pedidos y facturación
 SELECT * INTO Sales.Orders FROM WideWorldImporters.Sales.Orders WHERE 1=0;
 SELECT * INTO Sales.OrderLines FROM WideWorldImporters.Sales.OrderLines WHERE 1=0;
-SELECT * INTO Sales.Invoices FROM WideWorldImporters.Sales.Invoices WHERE 1=0;
-SELECT * INTO Sales.InvoiceLines FROM WideWorldImporters.Sales.InvoiceLines WHERE 1=0;
 
 --Estructura Items
 SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
@@ -110,9 +101,10 @@ SELECT * INTO Warehouse.Colors FROM WideWorldImporters.Warehouse.Colors WHERE 1=
 SELECT * INTO Warehouse.PackageTypes FROM WideWorldImporters.Warehouse.PackageTypes WHERE 1=0;
 --Estructura Proveedores
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
-SELECT * INTO Purchasing.SupplierCategories FROM WideWorldImporters.Purchasing.SupplierCategories WHERE 1=0;
 
 SELECT * INTO Application.DeliveryMethods FROM WideWorldImporters.Application.DeliveryMethods WHERE 1=0;
+
+
 
 
 --Estructuracion de Limon
@@ -137,8 +129,7 @@ SELECT CustomerID,
 	   CreditLimit,
 	   PaymentDays,
 	   AccountOpenedDate,
-	   DeliveryMethodID,
-	   DeliveryPostalCode
+	   DeliveryMethodID
 INTO Sales.Customers
 FROM WideWorldImporters.Sales.Customers
 WHERE 1=0;
@@ -148,8 +139,6 @@ SELECT * INTO Sales.CustomerCategories FROM WideWorldImporters.Sales.CustomerCat
 -- Pedidos y facturación
 SELECT * INTO Sales.Orders FROM WideWorldImporters.Sales.Orders WHERE 1=0;
 SELECT * INTO Sales.OrderLines FROM WideWorldImporters.Sales.OrderLines WHERE 1=0;
-SELECT * INTO Sales.Invoices FROM WideWorldImporters.Sales.Invoices WHERE 1=0;
-SELECT * INTO Sales.InvoiceLines FROM WideWorldImporters.Sales.InvoiceLines WHERE 1=0;
 
 --Estructura Items
 SELECT * INTO Warehouse.StockItems FROM WideWorldImporters.Warehouse.StockItems WHERE 1=0;
@@ -161,7 +150,6 @@ SELECT * INTO Warehouse.Colors FROM WideWorldImporters.Warehouse.Colors WHERE 1=
 SELECT * INTO Warehouse.PackageTypes FROM WideWorldImporters.Warehouse.PackageTypes WHERE 1=0;
 --Estructura Proveedores
 SELECT * INTO Purchasing.Suppliers FROM WideWorldImporters.Purchasing.Suppliers WHERE 1=0;
-SELECT * INTO Purchasing.SupplierCategories FROM WideWorldImporters.Purchasing.SupplierCategories WHERE 1=0;
 
 SELECT * INTO Application.DeliveryMethods FROM WideWorldImporters.Application.DeliveryMethods WHERE 1=0;
 
@@ -174,9 +162,7 @@ GO
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
 INSERT INTO Application.People SELECT * FROM WideWorldImporters.Application.People;
-INSERT INTO Application.Cities SELECT * FROM WideWorldImporters.Application.Cities;
-INSERT INTO Purchasing.PurchaseOrders SELECT * FROM WideWorldImporters.Purchasing.PurchaseOrders;
-INSERT INTO Purchasing.PurchaseOrderLines SELECT * FROM WideWorldImporters.Purchasing.PurchaseOrderLines;
+INSERT INTO Application.Cities SELECT * FROM WideWorldImporters.Application.Cities WHERE 1=0;
 INSERT INTO Sales.Customers (CustomerID,
 	   CustomerName,
 	   PrimaryContactPersonID,
@@ -188,12 +174,9 @@ INSERT INTO Sales.Customers (CustomerID,
        DeliveryAddressLine2,
 	   DeliveryPostalCode, 
 	   DeliveryCityID,
-	   PostalCityID,
-	   PostalAddressLine1,
-	   PostalAddressLine2,
-	   DeliveryLocation)
+	   PostalCityID)
 SELECT CustomerID, CustomerName,PrimaryContactPersonID,AlternateContactPersonID, PhoneNumber, FaxNumber, WebsiteURL,
-       DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID, PostalAddressLine1,PostalAddressLine2,DeliveryLocation
+       DeliveryAddressLine1, DeliveryAddressLine2, DeliveryPostalCode, DeliveryCityID, PostalCityID
 FROM WideWorldImporters.Sales.Customers
 
 USE SANJOSE
@@ -203,15 +186,12 @@ INSERT INTO Sales.CustomerCategories SELECT * FROM WideWorldImporters.Sales.Cust
 INSERT INTO Sales.BuyingGroups SELECT * FROM WideWorldImporters.Sales.BuyingGroups;
 INSERT INTO Sales.OrderLines SELECT * FROM WideWorldImporters.Sales.OrderLines;
 INSERT INTO Sales.Orders SELECT * FROM WideWorldImporters.Sales.Orders;
-INSERT INTO Sales.Invoices SELECT *  FROM WideWorldImporters.Sales.Invoices;
-INSERT INTO Sales.InvoiceLines SELECT * FROM WideWorldImporters.Sales.InvoiceLines;
 INSERT INTO Warehouse.StockItemStockGroups SELECT * FROM WideWorldImporters.Warehouse.StockItemStockGroups;
 INSERT INTO Warehouse.StockGroups SELECT * FROM WideWorldImporters.Warehouse.StockGroups;
 INSERT INTO Warehouse.Colors SELECT * FROM WideWorldImporters.Warehouse.Colors;
 INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Application.DeliveryMethods;
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
-INSERT INTO Purchasing.SupplierCategories SELECT * FROM WideWorldImporters.Purchasing.SupplierCategories;
 INSERT INTO Warehouse.StockItemHoldings SELECT * FROM WideWorldImporters.Warehouse.StockItemHoldings;
 INSERT INTO Warehouse.PackageTypes SELECT * FROM WideWorldImporters.Warehouse.PackageTypes;
 
@@ -223,16 +203,14 @@ INSERT INTO Sales.Customers (CustomerID,
 	   CreditLimit,
 	   PaymentDays,
 	   AccountOpenedDate,
-	   DeliveryMethodID,
-	   DeliveryPostalCode) 
+	   DeliveryMethodID) 
 SELECT CustomerID,CustomerName,BuyingGroupID,
 CustomerCategoryID,
 BillToCustomerID,
 CreditLimit,
 PaymentDays,
 AccountOpenedDate,
-DeliveryMethodID,
-DeliveryPostalCode
+DeliveryMethodID
 FROM WideWorldImporters.Sales.Customers cu
 
 
@@ -244,15 +222,12 @@ INSERT INTO Sales.CustomerCategories SELECT * FROM WideWorldImporters.Sales.Cust
 INSERT INTO Sales.BuyingGroups SELECT * FROM WideWorldImporters.Sales.BuyingGroups;
 INSERT INTO Sales.OrderLines SELECT * FROM WideWorldImporters.Sales.OrderLines;
 INSERT INTO Sales.Orders SELECT * FROM WideWorldImporters.Sales.Orders;
-INSERT INTO Sales.Invoices SELECT *  FROM WideWorldImporters.Sales.Invoices;
-INSERT INTO Sales.InvoiceLines SELECT * FROM WideWorldImporters.Sales.InvoiceLines;
 INSERT INTO Warehouse.StockItemStockGroups SELECT * FROM WideWorldImporters.Warehouse.StockItemStockGroups;
 INSERT INTO Warehouse.StockGroups SELECT * FROM WideWorldImporters.Warehouse.StockGroups;
 INSERT INTO Warehouse.Colors SELECT * FROM WideWorldImporters.Warehouse.Colors;
 INSERT INTO Application.DeliveryMethods SELECT * FROM WideWorldImporters.Application.DeliveryMethods;
 INSERT INTO Warehouse.StockItems SELECT * FROM WideWorldImporters.Warehouse.StockItems;
 INSERT INTO Purchasing.Suppliers SELECT * FROM WideWorldImporters.Purchasing.Suppliers;
-INSERT INTO Purchasing.SupplierCategories SELECT * FROM WideWorldImporters.Purchasing.SupplierCategories;
 INSERT INTO Warehouse.StockItemHoldings SELECT * FROM WideWorldImporters.Warehouse.StockItemHoldings;
 INSERT INTO Warehouse.PackageTypes SELECT * FROM WideWorldImporters.Warehouse.PackageTypes;
 
