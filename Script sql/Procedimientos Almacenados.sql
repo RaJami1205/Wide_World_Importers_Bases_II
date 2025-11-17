@@ -621,3 +621,166 @@ BEGIN
 	COMMIT TRANSACTION;
 END;
 GO
+
+CREATE OR ALTER PROCEDURE CreateStockItem
+(
+    @StockItemID                INT,
+    @StockItemName              NVARCHAR(100),
+    @SupplierID                 INT,
+    @ColorID                    INT = NULL,
+    @UnitPackageID              INT,
+    @OuterPackageID             INT,
+    @Brand                      NVARCHAR(50) = NULL,
+    @Size                       NVARCHAR(20) = NULL,
+    @LeadTimeDays               INT,
+    @QuantityPerOuter           INT,
+    @IsChillerStock             BIT,
+    @Barcode                    NVARCHAR(50) = NULL,
+    @TaxRate                    DECIMAL(18,3),
+    @UnitPrice                  DECIMAL(18,2),
+    @RecommendedRetailPrice     DECIMAL(18,2) = NULL,
+    @TypicalWeightPerUnit       DECIMAL(18,3),
+    @MarketingComments          NVARCHAR(MAX) = NULL,
+    @InternalComments           NVARCHAR(MAX) = NULL,
+    @Photo                      VARBINARY(MAX) = NULL,
+    @CustomFields               NVARCHAR(MAX) = NULL,
+    @Tags                       NVARCHAR(MAX) = NULL,
+    @SearchDetails              NVARCHAR(MAX),
+    @LastEditedBy               INT,
+    @InitialQuantity            INT,
+    @BinLocation                NVARCHAR(20),
+    @LastCostPrice              DECIMAL(18,2),
+    @ReorderLevel               INT,
+    @TargetStockLevel           INT
+)
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        INSERT INTO Warehouse.StockItems
+        (
+            StockItemID, StockItemName, SupplierID, ColorID, UnitPackageID,
+            OuterPackageID, Brand, Size, LeadTimeDays, QuantityPerOuter,
+            IsChillerStock, Barcode, TaxRate, UnitPrice,
+            RecommendedRetailPrice, TypicalWeightPerUnit,
+            MarketingComments, InternalComments, Photo,
+            CustomFields, Tags, SearchDetails, LastEditedBy,
+            ValidFrom, ValidTo
+        )
+        VALUES
+        (
+            @StockItemID, @StockItemName, @SupplierID, @ColorID, @UnitPackageID,
+            @OuterPackageID, @Brand, @Size, @LeadTimeDays, @QuantityPerOuter,
+            @IsChillerStock, @Barcode, @TaxRate, @UnitPrice,
+            @RecommendedRetailPrice, @TypicalWeightPerUnit,
+            @MarketingComments, @InternalComments, @Photo,
+            @CustomFields, @Tags, @SearchDetails, @LastEditedBy,
+            SYSDATETIME(), '9999-12-31'
+        );
+        INSERT INTO Warehouse.StockItemHoldings
+        (
+            StockItemID, QuantityOnHand, BinLocation,
+            LastStocktakeQuantity, LastCostPrice,
+            ReorderLevel, TargetStockLevel, LastEditedBy, LastEditedWhen
+        )
+        VALUES
+        (
+            @StockItemID, @InitialQuantity, @BinLocation,
+            @InitialQuantity, @LastCostPrice,
+            @ReorderLevel, @TargetStockLevel, @LastEditedBy, SYSDATETIME()
+        );
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END;
+GO
+
+CREATE OR ALTER PROCEDURE GetStockItem
+(
+    @StockItemID INT
+)
+AS
+BEGIN
+    SELECT 
+        si.*,
+        h.QuantityOnHand,
+        h.BinLocation,
+        h.ReorderLevel,
+        h.TargetStockLevel,
+        h.LastCostPrice
+    FROM Warehouse.StockItems si
+    LEFT JOIN Warehouse.StockItemHoldings h
+        ON si.StockItemID = h.StockItemID
+    WHERE si.StockItemID = @StockItemID;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE UpdateStockItem
+(
+    @StockItemID INT,
+    @NewName NVARCHAR(100) = NULL,
+    @NewUnitPrice DECIMAL(18,2) = NULL,
+    @NewBrand NVARCHAR(50) = NULL,
+    @LastEditedBy INT
+)
+AS
+BEGIN
+    UPDATE Warehouse.StockItems
+    SET 
+        StockItemName = ISNULL(@NewName, StockItemName),
+        UnitPrice = ISNULL(@NewUnitPrice, UnitPrice),
+        Brand = ISNULL(@NewBrand, Brand),
+        LastEditedBy = @LastEditedBy,
+        ValidFrom = SYSDATETIME()
+    WHERE StockItemID = @StockItemID;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE AdjustInventory
+(
+    @StockItemID INT,
+    @Adjustment INT, 
+    @LastEditedBy INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE Warehouse.StockItemHoldings
+    SET 
+        QuantityOnHand = QuantityOnHand + @Adjustment,
+        LastEditedWhen = SYSDATETIME(),
+        LastEditedBy = @LastEditedBy
+    WHERE StockItemID = @StockItemID;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE DeleteStockItem
+(
+    @StockItemID INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DELETE FROM Warehouse.StockItemHoldings
+        WHERE StockItemID = @StockItemID;
+
+        DELETE FROM Warehouse.StockItems
+        WHERE StockItemID = @StockItemID;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END;
+GO

@@ -1,3 +1,25 @@
+CREATE PROCEDURE CrearUsuario
+    @Username NVARCHAR(30),
+    @Password NVARCHAR(200),
+    @Fullname NVARCHAR(40),
+    @Active INT,
+    @Rol INT,
+    @Email NVARCHAR(30)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @PasswordHash VARBINARY(64) = HASHBYTES(
+        'SHA2_512',
+        CONVERT(VARBINARY(200), @Password)
+    );
+
+    INSERT INTO Usuarios (username, password, fullname, active, rol, email, hiredate)
+    VALUES (@Username, @PasswordHash, @Fullname, @Active, @Rol, @Email, GETDATE());
+END;
+GO
+
+
 CREATE OR ALTER PROCEDURE EstadisticaProveedores
     @Nombre NVARCHAR(100) = NULL,
     @Categoria NVARCHAR(100) = NULL,
@@ -11,7 +33,6 @@ BEGIN
         StockItemName NVARCHAR(100),
         UnitPrice DECIMAL(18,2)
     );
---DESKTOP-BE6OQQA\NODO_CORPORATIVO
     CREATE TABLE #StockGroups (
         StockGroupID INT,
         StockGroupName NVARCHAR(100)
@@ -66,7 +87,6 @@ BEGIN
                  FROM Limon.Warehouse.StockItemStockGroups')
         WHERE @Flag = 1 OR @Flag = 3
     ) AS Temp;
-
 
     SELECT 
         CASE 
@@ -144,40 +164,33 @@ BEGIN
         SELECT InvoiceID, CustomerID
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, CustomerID FROM SanJose.Sales.Invoices');
-
         INSERT INTO @InvoiceLines
         SELECT InvoiceID, LineProfit
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, LineProfit FROM SanJose.Sales.InvoiceLines');
-
         INSERT INTO @Customers_Sucursal
         SELECT CustomerID, CustomerCategoryID
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT CustomerID, CustomerCategoryID FROM SanJose.Sales.Customers');
-
         INSERT INTO @CustomerCategories
         SELECT CustomerCategoryID, CustomerCategoryName
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT CustomerCategoryID, CustomerCategoryName FROM SanJose.Sales.CustomerCategories');
     END
-
     IF @Flag = 1 OR @Flag = 3
     BEGIN
         INSERT INTO @Invoices
         SELECT InvoiceID, CustomerID
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, CustomerID FROM Limon.Sales.Invoices');
-
         INSERT INTO @InvoiceLines
         SELECT InvoiceID, LineProfit
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, LineProfit FROM Limon.Sales.InvoiceLines');
-
         INSERT INTO @Customers_Sucursal
         SELECT CustomerID, CustomerCategoryID
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT CustomerID, CustomerCategoryID FROM Limon.Sales.Customers');
-
         INSERT INTO @CustomerCategories
         SELECT CustomerCategoryID, CustomerCategoryName
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
@@ -548,7 +561,6 @@ CREATE PROCEDURE GetClientes
     @Flag INT = 1   -- 1=Todos, 2=SANJOSE, 3=LIMON
 AS
 BEGIN
-
     DECLARE @CustomersCorporativo TABLE (
         CustomerID INT,
         CustomerName NVARCHAR(100),
@@ -563,7 +575,6 @@ BEGIN
         DeliveryCityID INT,
         PostalCityID INT
     );
-
     DECLARE @CustomersSucursales TABLE (
         CustomerID INT,
         CustomerName NVARCHAR(100),
@@ -626,5 +637,3 @@ BEGIN
 
 END;
 GO
-
-		 
