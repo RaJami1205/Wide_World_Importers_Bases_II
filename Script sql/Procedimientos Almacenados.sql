@@ -22,7 +22,7 @@ CREATE PROCEDURE InformacionCliente
 
 AS 
 BEGIN
-	SELECT cu.CustomerName AS NombreCliente, 
+	SELECT cu1.CustomerName AS NombreCliente, 
 	ca.CustomerCategoryName AS CategoriaCliente,
 	bg.BuyingGroupName AS GrupoCompra, 
 	CASE 
@@ -37,38 +37,38 @@ BEGIN
 		WHEN pe2.FullName IS NOT NULL AND pe2.EmailAddress IS NULL THEN pe2.FullName
 		ELSE NULL
 		END AS ContactoAlternativo,
-	cu.BillToCustomerID AS ClienteAFacturar, 
+	cu1.BillToCustomerID AS ClienteAFacturar, 
 	dm.DeliveryMethodName AS MetodoEntrega,
 	ci.CityName AS CiudadEntrega,
-	cu.DeliveryPostalCode AS CodigoPostal,
-	cu.FaxNumber AS Fax,
-	cu.PhoneNumber AS Telefono,
-	cu.PaymentDays AS DiasPagar,
-	cu.WebsiteURL AS SitioWeb,
+	cu2.DeliveryPostalCode AS CodigoPostal,
+	cu2.FaxNumber AS Fax,
+	cu2.PhoneNumber AS Telefono,
+	cu1.PaymentDays AS DiasPagar,
+	cu2.WebsiteURL AS SitioWeb,
 	CASE 
-		WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN CONCAT(cu.DeliveryAddressLine1,',',cu.DeliveryAddressLine2)
-		WHEN cu.DeliveryAddressLine1 IS NULL AND cu.DeliveryAddressLine2 IS NOT NULL THEN cu.DeliveryAddressLine2
-		WHEN cu.DeliveryAddressLine1 IS NOT NULL AND cu.DeliveryAddressLine2 IS NULL THEN cu.DeliveryAddressLine1
+		WHEN cu2.DeliveryAddressLine1 IS NOT NULL AND cu2.DeliveryAddressLine2 IS NOT NULL THEN CONCAT(cu2.DeliveryAddressLine1,',',cu2.DeliveryAddressLine2)
+		WHEN cu2.DeliveryAddressLine1 IS NULL AND cu2.DeliveryAddressLine2 IS NOT NULL THEN cu2.DeliveryAddressLine2
+		WHEN cu2.DeliveryAddressLine1 IS NOT NULL AND cu2.DeliveryAddressLine2 IS NULL THEN cu2.DeliveryAddressLine1
 		ELSE NULL
 		END AS Direccion,
 	CASE
-		WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NOT NULL THEN CONCAT(cu.PostalAddressLine1,',',cu.PostalAddressLine2)
-		WHEN cu.PostalAddressLine1 IS NULL AND cu.PostalAddressLine2 IS NOT NULL THEN cu.PostalAddressLine2
-		WHEN cu.PostalAddressLine1 IS NOT NULL AND cu.PostalAddressLine2 IS NULL THEN cu.PostalAddressLine1
+		WHEN cu2.PostalAddressLine1 IS NOT NULL AND cu2.PostalAddressLine2 IS NOT NULL THEN CONCAT(cu2.PostalAddressLine1,',',cu2.PostalAddressLine2)
+		WHEN cu2.PostalAddressLine1 IS NULL AND cu2.PostalAddressLine2 IS NOT NULL THEN cu2.PostalAddressLine2
+		WHEN cu2.PostalAddressLine1 IS NOT NULL AND cu2.PostalAddressLine2 IS NULL THEN cu2.PostalAddressLine1
 		ELSE NULL
 		END AS DireccionPostal,
-	cu.DeliveryLocation AS MapaLocalizacion
-	FROM Sales.Customers cu
-	LEFT JOIN Sales.CustomerCategories ca ON (cu.CustomerCategoryID = ca.CustomerCategoryID)
-	LEFT JOIN Sales.BuyingGroups bg ON (cu.BuyingGroupID = bg.BuyingGroupID)
-	LEFT JOIN Application.DeliveryMethods dm ON (cu.DeliveryMethodID = dm.DeliveryMethodID)
-	LEFT JOIN Application.Cities ci ON (cu.DeliveryCityID = ci.CityID)
-	LEFT JOIN Application.People pe1 ON (cu.PrimaryContactPersonID = pe1.PersonID)
-	LEFT JOIN Application.People pe2 ON (cu.AlternateContactPersonID = pe2.PersonID)
-	WHERE cu.CustomerName = @Nombre
+	cu2.DeliveryLocation AS MapaLocalizacion
+	FROM Sales.Customers cu1
+	JOIN CORPORATIVO.Sales.Customers cu2 ON (cu1.CustomerID = cu2.CustomerID)
+	LEFT JOIN Sales.CustomerCategories ca ON (cu1.CustomerCategoryID = ca.CustomerCategoryID)
+	LEFT JOIN Sales.BuyingGroups bg ON (cu1.BuyingGroupID = bg.BuyingGroupID)
+	LEFT JOIN Application.DeliveryMethods dm ON (cu1.DeliveryMethodID = dm.DeliveryMethodID)
+	LEFT JOIN CORPORATIVO.Application.Cities ci ON (cu2.DeliveryCityID = ci.CityID)
+	LEFT JOIN CORPORATIVO.Application.People pe1 ON (cu2.PrimaryContactPersonID = pe1.PersonID)
+	LEFT JOIN CORPORATIVO.Application.People pe2 ON (cu2.AlternateContactPersonID = pe2.PersonID)
+	WHERE cu1.CustomerName = @Nombre
 END;
 GO
-
 
 CREATE PROCEDURE ObtenerProveedores
 	@Nombre NVARCHAR(100)= NULL,
@@ -87,6 +87,7 @@ BEGIN
 	ORDER BY su.SupplierName ASC
 END;
 GO 
+
 
 CREATE PROCEDURE InformacionProveedor
 	@Nombre NVARCHAR(100)
@@ -133,9 +134,9 @@ BEGIN
 	FROM Purchasing.Suppliers su
 	LEFT JOIN Purchasing.SupplierCategories sc ON (su.SupplierCategoryID = sc.SupplierCategoryID)
 	LEFT JOIN Application.DeliveryMethods dm ON (su.DeliveryMethodID = dm.DeliveryMethodID)
-	LEFT JOIN Application.Cities ci ON (su.DeliveryCityID = ci.CityID)
-	LEFT JOIN Application.People pe1 ON (su.PrimaryContactPersonID = pe1.PersonID)
-	LEFT JOIN Application.People pe2 ON (su.AlternateContactPersonID = pe2.PersonID)
+	LEFT JOIN CORPORATIVO.Application.Cities ci ON (su.DeliveryCityID = ci.CityID)
+	LEFT JOIN CORPORATIVO.Application.People pe1 ON (su.PrimaryContactPersonID = pe1.PersonID)
+	LEFT JOIN CORPORATIVO.Application.People pe2 ON (su.AlternateContactPersonID = pe2.PersonID)
 	WHERE su.SupplierName = @Nombre
 END;
 GO
@@ -255,8 +256,8 @@ BEGIN
 	FROM Sales.Orders o
 	LEFT JOIN Sales.Customers c ON (o.CustomerID = c.CustomerID)
 	LEFT JOIN Application.DeliveryMethods d ON (c.DeliveryMethodID = d.DeliveryMethodID)
-	LEFT JOIN Application.People p1 ON (o.ContactPersonID = p1.PersonID)
-	LEFT JOIN Application.People p2 ON (o.SalespersonPersonID = p2.PersonID)
+	LEFT JOIN CORPORATIVO.Application.People p1 ON (o.ContactPersonID = p1.PersonID)
+	LEFT JOIN CORPORATIVO.Application.People p2 ON (o.SalespersonPersonID = p2.PersonID)
 	WHERE (@NumeroFactura IS NULL OR o.OrderID = @NumeroFactura);
 
 	--Detalle Factura--
@@ -274,181 +275,7 @@ BEGIN
 END;
 GO
 
---Corporativo
-CREATE PROCEDURE EstadisticaProveedores
-    @Nombre NVARCHAR(100) = NULL,
-    @Categoria NVARCHAR(100) = NULL
-AS
-BEGIN
-    SELECT 
-        CASE 
-            WHEN s.SupplierName IS NULL THEN 'Total General'
-            ELSE s.SupplierName
-        END AS NombreProveedor,
-        CASE
-            WHEN sg.StockGroupName IS NULL AND s.SupplierName IS NOT NULL THEN 'Estadísticas por Categoría del Proveedor'
-            WHEN sg.StockGroupName IS NULL AND s.SupplierName IS NULL THEN ''
-            ELSE sg.StockGroupName
-        END AS Categoria,
-        MAX(si.UnitPrice * pol.ReceivedOuters) AS MontoMaximo,
-        MIN(si.UnitPrice * pol.ReceivedOuters) AS MontoMinimo,
-        AVG(si.UnitPrice * pol.ReceivedOuters) AS MontoPromedio
-    FROM Purchasing.PurchaseOrders po
-    JOIN Purchasing.Suppliers s ON po.SupplierID = s.SupplierID
-    JOIN Purchasing.PurchaseOrderLines pol ON po.PurchaseOrderID = pol.PurchaseOrderID
-    JOIN Warehouse.StockItems si ON pol.StockItemID = si.StockItemID
-    JOIN Warehouse.StockItemStockGroups sisg ON si.StockItemID = sisg.StockItemID
-    JOIN Warehouse.StockGroups sg ON sisg.StockGroupID = sg.StockGroupID
-    WHERE (@Nombre IS NULL OR s.SupplierName LIKE '%' + @Nombre + '%')
-      AND (@Categoria IS NULL OR sg.StockGroupName LIKE '%' + @Categoria + '%')
-    GROUP BY ROLLUP (s.SupplierName, sg.StockGroupName)
-    ORDER BY s.SupplierName ASC, sg.StockGroupName DESC;
-END;
-GO
 
-CREATE PROCEDURE EstadisticasVentasClientes
-    @Cliente NVARCHAR(100) = NULL,
-    @Categoria NVARCHAR(100) = NULL
-AS
-BEGIN
-    -- CTE: calcular totales por cliente y categoría
-    WITH Subtotales AS (
-        SELECT
-            c.CustomerName,
-            cc.CustomerCategoryName,
-            SUM(il.LineProfit) AS TotalFactura
-        FROM Sales.Invoices i
-        JOIN Sales.Customers c ON i.CustomerID = c.CustomerID
-        JOIN Sales.InvoiceLines il ON i.InvoiceID = il.InvoiceID
-        JOIN Sales.CustomerCategories cc ON c.CustomerCategoryID = cc.CustomerCategoryID
-        WHERE 
-            (@Cliente IS NULL OR c.CustomerName LIKE '%' + @Cliente + '%') AND
-            (@Categoria IS NULL OR cc.CustomerCategoryName LIKE '%' + @Categoria + '%')
-        GROUP BY c.CustomerName, cc.CustomerCategoryName
-    )
-
-    SELECT
-        CASE 
-            WHEN CustomerName IS NULL THEN 'Total General'
-            ELSE CustomerName
-        END AS NombreCliente,
-        CASE
-            WHEN CustomerName IS NOT NULL AND CustomerCategoryName IS NULL THEN 'Subtotal por Cliente'
-            WHEN CustomerName IS NULL AND CustomerCategoryName IS NULL THEN ''
-            ELSE CustomerCategoryName
-        END AS CategoriaCliente,
-        MAX(TotalFactura) AS MontoMaximo,
-        MIN(TotalFactura) AS MontoMinimo,
-        AVG(TotalFactura) AS MontoPromedio
-    FROM Subtotales
-    GROUP BY ROLLUP (CustomerName, CustomerCategoryName)
-    ORDER BY 
-        CASE WHEN CustomerName IS NULL THEN 0 ELSE 1 END,  -- Total General primero
-        CustomerName ASC,
-        CategoriaCliente ASC;
-END;
-GO
-
-CREATE PROCEDURE Top5ProductosPorGanancia
-    @AnioInicio INT = NULL,
-    @AnioFin INT = NULL
-AS
-BEGIN
-	WITH Resultados AS (
-		SELECT
-			YEAR(i.InvoiceDate) AS Anio,
-			si.StockItemName AS Producto,
-			SUM(il.UnitPrice * il.Quantity) AS GananciaTotal,
-			DENSE_RANK() OVER (PARTITION BY YEAR(i.InvoiceDate) ORDER BY SUM(il.Quantity * il.UnitPrice * (1 + (il.TaxRate / 100))) DESC) AS Posicion
-		FROM Sales.Invoices i
-		JOIN Sales.InvoiceLines il ON i.InvoiceID = il.InvoiceID
-		JOIN Warehouse.StockItems si ON il.StockItemID = si.StockItemID
-		GROUP BY YEAR(i.InvoiceDate), si.StockItemName
-		HAVING SUM((il.UnitPrice - si.TypicalWeightPerUnit) * il.Quantity) > 0
-	)
-	SELECT *
-	FROM Resultados
-	WHERE Posicion <= 5 AND (@AnioInicio IS NULL OR Anio >= @AnioInicio) AND (@AnioFin IS NULL OR Anio <= @AnioFin)
-	ORDER BY Anio, Posicion;
-END;
-GO
-
-CREATE PROCEDURE Top5ClientesPorFacturas
-    @AnioInicio INT = NULL,
-    @AnioFin INT = NULL
-AS
-BEGIN
-    WITH TotalFacturas AS (
-        SELECT
-            i.InvoiceID,
-            c.CustomerName,
-            YEAR(i.InvoiceDate) AS Anio,
-            SUM(il.Quantity * il.UnitPrice * (1 + (il.TaxRate / 100))) AS TotalFactura
-        FROM Sales.Invoices i
-        JOIN Sales.Customers c ON i.CustomerID = c.CustomerID
-        JOIN Sales.InvoiceLines il ON i.InvoiceID = il.InvoiceID
-        GROUP BY i.InvoiceID, c.CustomerName, YEAR(i.InvoiceDate)
-    ),
-    TotalesPorCliente AS (
-        SELECT
-            Anio,
-            CustomerName,
-            COUNT(InvoiceID) AS CantidadFacturas,
-            SUM(TotalFactura) AS MontoTotalFacturado,
-            DENSE_RANK() OVER (PARTITION BY Anio ORDER BY COUNT(InvoiceID) DESC, SUM(TotalFactura) DESC ) AS Posicion
-        FROM TotalFacturas
-        GROUP BY Anio, CustomerName
-    )
-    SELECT 
-        Anio,
-        CustomerName AS Cliente,
-        CantidadFacturas,
-        MontoTotalFacturado,
-		Posicion
-    FROM TotalesPorCliente
-    WHERE Posicion <= 5 AND (@AnioInicio IS NULL OR Anio >= @AnioInicio) AND (@AnioFin IS NULL OR Anio <= @AnioFin)
-    ORDER BY Anio ASC, CantidadFacturas DESC;
-END;
-GO
-
-CREATE PROCEDURE Top5ProveedoresPorOrdenes
-    @AnioInicio INT = NULL,
-    @AnioFin INT = NULL
-AS
-BEGIN
-    WITH TotalOrdenes AS (
-        SELECT
-            po.PurchaseOrderID,
-            s.SupplierName,
-            YEAR(po.OrderDate) AS Anio,
-            SUM(pol.OrderedOuters * si.UnitPrice * (1 + (si.TaxRate / 100))) AS TotalOrdenes
-        FROM Purchasing.PurchaseOrders po
-        JOIN Purchasing.Suppliers s ON (po.SupplierID = s.SupplierID)
-        JOIN Purchasing.PurchaseOrderLines pol ON (po.PurchaseOrderID= pol.PurchaseOrderID)
-		JOIN Warehouse.StockItems si ON (pol.StockItemID = si.StockItemID)
-        GROUP BY po.PurchaseOrderID, s.SupplierName, YEAR(po.OrderDate)
-    ),
-    TotalesPorProveedor AS (
-        SELECT
-            Anio,
-            SupplierName,
-            COUNT(PurchaseOrderID) AS CantidadOrdenes,
-            SUM(TotalOrdenes) AS MontoTotalFacturado,
-            DENSE_RANK() OVER (PARTITION BY Anio ORDER BY COUNT(PurchaseOrderID) DESC, SUM(TotalOrdenes) DESC ) AS Posicion
-        FROM TotalOrdenes
-        GROUP BY Anio, SupplierName
-    )
-    SELECT 
-        Anio,
-        SupplierName AS Proveedor,
-        CantidadOrdenes,
-        MontoTotalFacturado,
-		Posicion
-    FROM TotalesPorProveedor
-    WHERE Posicion <= 5 AND (@AnioInicio IS NULL OR Anio >= @AnioInicio) AND (@AnioFin IS NULL OR Anio <= @AnioFin)
-    ORDER BY Anio ASC, CantidadOrdenes DESC;
-END;
-GO
 
 CREATE PROCEDURE ObtenerRangosProductos
 AS
@@ -466,41 +293,41 @@ BEGIN
 	SELECT s.SupplierID,s.SupplierName
 	FROM Purchasing.Suppliers s
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
 CREATE PROCEDURE ObtenerVendedores
 AS 
 BEGIN
 	BEGIN TRANSACTION;
 	SELECT DISTINCT p.PersonID,p.FullName
-	FROM Application.People p
+	FROM CORPORATIVO.Application.People p
 	WHERE p.IsSalesperson = 1
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
 CREATE PROCEDURE ObtenerEmpleados
 AS 
 BEGIN
 	BEGIN TRANSACTION;
 	SELECT DISTINCT p.PersonID,p.FullName
-	FROM Application.People p
+	FROM CORPORATIVO.Application.People p
 	WHERE p.IsEmployee = 1
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
 CREATE PROCEDURE ObtenerPersonas
 AS 
 BEGIN
 	BEGIN TRANSACTION;
 	SELECT DISTINCT p.PersonID,p.FullName
-	FROM Application.People p
+	FROM CORPORATIVO.Application.People p
 	WHERE p.IsEmployee = 0 AND p.IsSalesperson = 0 AND p.IsSystemUser = 0
 	COMMIT TRANSACTION
-END
-GO;
+END;
+GO
 
 CREATE PROCEDURE InsertInvoice
 (
@@ -562,7 +389,7 @@ AS
 BEGIN
 	BEGIN TRANSACTION;
     SELECT *
-    FROM Sales.Invoices
+    FROM Sales.Invoices 
     WHERE InvoiceID = @InvoiceID;
 
     SELECT *
@@ -753,7 +580,7 @@ END;
 GO
 
 
-CREATE OR ALTER PROCEDURE GetInvoiceLines
+CREATE PROCEDURE GetInvoiceLines
 (
     @InvoiceID INT
 )
