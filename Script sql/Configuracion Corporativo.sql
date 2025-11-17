@@ -8,7 +8,7 @@ USE CORPORATIVO
 CREATE TABLE Usuarios (
 	iduser INT IDENTITY,
 	username NVARCHAR(30),
-	password NVARCHAR(30),
+	password VARBINARY(8000),
 	fullname NVARCHAR(40),
 	active INT CHECK (active = 0 OR active = 1),
 	rol INT CHECK (rol = 0 OR rol = 1),

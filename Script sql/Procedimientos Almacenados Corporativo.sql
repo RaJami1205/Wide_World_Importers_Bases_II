@@ -269,7 +269,6 @@ CREATE OR ALTER PROCEDURE Top5ProductosPorGanancia
     @Flag INT = 1 -- 1 = Ambas, 2 = San Jose, 3 = Limon
 AS
 BEGIN
-    -- Nivel de aislamiento para evitar bloqueos
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
     -- Tablas Temporales
@@ -391,7 +390,6 @@ CREATE OR ALTER PROCEDURE Top5ClientesPorFacturas
     @Flag INT = 1
 AS
 BEGIN
-    SET NOCOUNT ON;
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
     DECLARE @Invoices TABLE (
@@ -504,7 +502,6 @@ CREATE OR ALTER PROCEDURE Top5ProveedoresPorOrdenes
     @Flag INT = 1
 AS
 BEGIN
-    SET NOCOUNT ON;
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
     DECLARE @StockItems TABLE (
@@ -582,5 +579,180 @@ BEGIN
       AND (@AnioFin IS NULL OR Anio <= @AnioFin)
     ORDER BY Anio ASC, CantidadOrdenes DESC;
 
+END;
+GO
+
+CREATE OR ALTER PROCEDURE ObtenerClientes
+    @Nombre NVARCHAR(100) = NULL,
+    @Categoria NVARCHAR(100) = NULL,
+    @MetodoEntrega NVARCHAR(100) = NULL,
+    @Flag INT = 1
+AS
+BEGIN
+    -- Tabla temporal
+    CREATE TABLE #Clientes(
+        NombreCliente NVARCHAR(100),
+        CategoriaCliente NVARCHAR(100),
+        MetodoEntrega NVARCHAR(100)
+    );
+    -- San José
+    IF @Flag IN (1, 2)
+    BEGIN
+        INSERT INTO #Clientes(NombreCliente, CategoriaCliente, MetodoEntrega)
+        SELECT cu.CustomerName,
+               ca.CustomerCategoryName,
+               dm.DeliveryMethodName
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.Customers') cu
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.CustomerCategories') ca ON cu.CustomerCategoryID = ca.CustomerCategoryID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Application.DeliveryMethods') dm ON cu.DeliveryMethodID = dm.DeliveryMethodID
+        WHERE (@Nombre IS NULL OR cu.CustomerName LIKE '%' + @Nombre + '%')
+          AND (@Categoria IS NULL OR ca.CustomerCategoryName LIKE '%' + @Categoria + '%')
+          AND (@MetodoEntrega IS NULL OR dm.DeliveryMethodName LIKE '%' + @MetodoEntrega + '%');
+    END
+    -- Limón
+    IF @Flag = 1 OR @Flag = 3
+    BEGIN
+        INSERT INTO #Clientes(NombreCliente, CategoriaCliente, MetodoEntrega)
+        SELECT cu.CustomerName,
+               ca.CustomerCategoryName,
+               dm.DeliveryMethodName
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.Customers') cu
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.CustomerCategories') ca ON cu.CustomerCategoryID = ca.CustomerCategoryID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Application.DeliveryMethods') dm ON cu.DeliveryMethodID = dm.DeliveryMethodID
+        WHERE (@Nombre IS NULL OR cu.CustomerName LIKE '%' + @Nombre + '%')
+          AND (@Categoria IS NULL OR ca.CustomerCategoryName LIKE '%' + @Categoria + '%')
+          AND (@MetodoEntrega IS NULL OR dm.DeliveryMethodName LIKE '%' + @MetodoEntrega + '%');
+    END
+
+    SELECT *
+    FROM #Clientes
+    ORDER BY NombreCliente;
+
+    DROP TABLE #Clientes;
+END;
+GO
+
+CREATE PROCEDURE ObtenerProveedores
+	@Nombre NVARCHAR(100)= NULL,
+	@Categoria NVARCHAR(100)= NULL,
+	@MetodoEntrega NVARCHAR(100)= NULL
+AS
+BEGIN
+	SELECT su.SupplierName AS NombreProveedor, sc.SupplierCategoryName AS CategoriaProveedor, dm.DeliveryMethodName AS MetodoEntrega
+	FROM Purchasing.Suppliers su
+	LEFT JOIN Purchasing.SupplierCategories sc ON (su.SupplierCategoryID = sc.SupplierCategoryID)
+	LEFT JOIN Application.DeliveryMethods dm ON (su.DeliveryMethodID = dm.DeliveryMethodID)
+	WHERE ( @Nombre IS NULL OR su.SupplierName LIKE '%' + @Nombre + '%') AND
+	( @Categoria IS NULL OR sc.SupplierCategoryName LIKE '%' + @Categoria + '%') AND
+	( @MetodoEntrega IS NULL OR dm.DeliveryMethodName LIKE '%' + @MetodoEntrega + '%')
+	ORDER BY su.SupplierName ASC
+END;
+GO 
+
+
+CREATE OR ALTER PROCEDURE ObtenerInventarios
+    @Nombre NVARCHAR(100) = NULL,
+    @Grupo NVARCHAR(100) = NULL,
+    @CantidadMinima INT = NULL,
+    @CantidadMaxima INT = NULL,
+    @Flag INT = 1 -- 1 = Todas, 2 = SanJose, 3 = Limon
+AS
+BEGIN
+    SELECT *
+    FROM
+    (
+        -- San José
+        SELECT 
+            si.StockItemName AS NombreProducto,
+            STRING_AGG(sg.StockGroupName, ', ') AS GrupoProducto,
+            sih.QuantityOnHand AS CantidadProducto,
+            'SANJOSE' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE], 'SELECT * FROM SANJOSE.Warehouse.StockItems') si
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE], 'SELECT * FROM SANJOSE.Warehouse.StockItemHoldings') sih ON si.StockItemID = sih.StockItemID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE], 'SELECT * FROM SANJOSE.Warehouse.StockItemStockGroups') sisg ON si.StockItemID = sisg.StockItemID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE], 'SELECT * FROM SANJOSE.Warehouse.StockGroups') sg ON sisg.StockGroupID = sg.StockGroupID
+        WHERE (@Flag = 1 OR @Flag = 2)
+          AND (@Nombre IS NULL OR si.StockItemName LIKE '%' + @Nombre + '%')
+          AND (@Grupo IS NULL OR sg.StockGroupName LIKE '%' + @Grupo + '%')
+          AND (@CantidadMinima IS NULL OR sih.QuantityOnHand >= @CantidadMinima)
+          AND (@CantidadMaxima IS NULL OR sih.QuantityOnHand <= @CantidadMaxima)
+        GROUP BY si.StockItemName, sih.QuantityOnHand
+        UNION ALL
+        -- Limón
+        SELECT 
+            si.StockItemName AS NombreProducto,
+            STRING_AGG(sg.StockGroupName, ', ') AS GrupoProducto,
+            sih.QuantityOnHand AS CantidadProducto,
+            'LIMON' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON], 'SELECT * FROM LIMON.Warehouse.StockItems') si
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON], 'SELECT * FROM LIMON.Warehouse.StockItemHoldings') sih ON si.StockItemID = sih.StockItemID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON], 'SELECT * FROM LIMON.Warehouse.StockItemStockGroups') sisg ON si.StockItemID = sisg.StockItemID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON], 'SELECT * FROM LIMON.Warehouse.StockGroups') sg ON sisg.StockGroupID = sg.StockGroupID
+        WHERE (@Flag = 1 OR @Flag = 3)
+          AND (@Nombre IS NULL OR si.StockItemName LIKE '%' + @Nombre + '%')
+          AND (@Grupo IS NULL OR sg.StockGroupName LIKE '%' + @Grupo + '%')
+          AND (@CantidadMinima IS NULL OR sih.QuantityOnHand >= @CantidadMinima)
+          AND (@CantidadMaxima IS NULL OR sih.QuantityOnHand <= @CantidadMaxima)
+        GROUP BY si.StockItemName, sih.QuantityOnHand
+    ) AS Inventarios
+    ORDER BY Sucursal,NombreProducto;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE ObtenerVentas
+    @NumeroFactura INT = NULL,
+    @NombreCliente NVARCHAR(100) = NULL,
+    @FechaInicial DATE = NULL,
+    @FechaFinal DATE = NULL,
+    @MontoMinimo DECIMAL(10,2) = NULL,
+    @MontoMaximo DECIMAL(10,2) = NULL,
+    @Flag INT = 1  -- 1 = Todas, 2 = SanJose, 3 = Limon
+AS
+BEGIN
+    SELECT *
+    FROM
+    (
+        -- San José
+        SELECT 
+            o.OrderID AS NumeroFactura,
+            o.OrderDate AS Fecha,
+            c.CustomerName AS NombreCliente,
+            d.DeliveryMethodName AS MetodoEntrega,
+            SUM(ol.Quantity * ol.UnitPrice * (1 + (ol.TaxRate / 100))) AS Monto,
+            'SANJOSE' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.Orders') o
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.OrderLines') ol ON o.OrderID = ol.OrderID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Sales.Customers') c ON o.CustomerID = c.CustomerID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],'SELECT * FROM SANJOSE.Application.DeliveryMethods') d ON c.DeliveryMethodID = d.DeliveryMethodID
+        WHERE (@Flag IN (1,2))
+          AND (@NumeroFactura IS NULL OR CAST(o.OrderID AS NVARCHAR(20)) LIKE '%' + CAST(@NumeroFactura AS NVARCHAR(20)) + '%')
+          AND (@NombreCliente IS NULL OR c.CustomerName LIKE '%' + @NombreCliente + '%')
+          AND (@FechaInicial IS NULL OR o.OrderDate >= @FechaInicial)
+          AND (@FechaFinal IS NULL OR o.OrderDate <= @FechaFinal)
+        GROUP BY o.OrderID, o.OrderDate, c.CustomerName, d.DeliveryMethodName
+
+        UNION ALL
+
+        -- Limón
+        SELECT 
+            o.OrderID AS NumeroFactura,
+            o.OrderDate AS Fecha,
+            c.CustomerName AS NombreCliente,
+            d.DeliveryMethodName AS MetodoEntrega,
+            SUM(ol.Quantity * ol.UnitPrice * (1 + (ol.TaxRate / 100))) AS Monto,
+            'LIMON' AS Sucursal
+        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.Orders') o
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.OrderLines') ol ON o.OrderID = ol.OrderID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Sales.Customers') c ON o.CustomerID = c.CustomerID
+        JOIN OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],'SELECT * FROM LIMON.Application.DeliveryMethods') d ON c.DeliveryMethodID = d.DeliveryMethodID
+        WHERE (@Flag IN (1,3))
+          AND (@NumeroFactura IS NULL OR CAST(o.OrderID AS NVARCHAR(20)) LIKE '%' + CAST(@NumeroFactura AS NVARCHAR(20)) + '%')
+          AND (@NombreCliente IS NULL OR c.CustomerName LIKE '%' + @NombreCliente + '%')
+          AND (@FechaInicial IS NULL OR o.OrderDate >= @FechaInicial)
+          AND (@FechaFinal IS NULL OR o.OrderDate <= @FechaFinal)
+        GROUP BY o.OrderID, o.OrderDate, c.CustomerName, d.DeliveryMethodName
+    ) AS Ventas
+    ORDER BY NombreCliente ASC, Monto DESC;
 END;
 GO
