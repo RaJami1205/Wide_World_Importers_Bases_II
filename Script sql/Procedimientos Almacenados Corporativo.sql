@@ -1,17 +1,77 @@
+CREATE OR ALTER PROCEDURE CrearUsuario
+    @Username NVARCHAR(30),
+    @Password NVARCHAR(200),
+    @Fullname NVARCHAR(40),
+    @Active INT,
+    @Rol INT,
+    @Email NVARCHAR(30)
+AS
+BEGIN
+    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @PasswordHash VARBINARY(64) = HASHBYTES(
+            'SHA2_512',
+            CONVERT(VARBINARY(200), @Password)
+        );
+
+        INSERT INTO Usuarios (username, password, fullname, active, rol, email, hiredate)
+        VALUES (@Username, @PasswordHash, @Fullname, @Active, @Rol, @Email, GETDATE());
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END;
+GO
+
+CREATE OR ALTER PROCEDURE LoginUsuario
+    @Username NVARCHAR(30),
+    @Password NVARCHAR(200)
+AS
+BEGIN
+    SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+    DECLARE @PasswordHash VARBINARY(64) = HASHBYTES(
+        'SHA2_512',
+        CONVERT(VARBINARY(200), @Password)
+    );
+
+    IF EXISTS (
+        SELECT 1
+        FROM Usuarios
+        WHERE username = @Username
+          AND password = @PasswordHash
+    )
+    BEGIN
+        SELECT 'Acceso permitido' AS Mensaje, 1 AS Acceso;
+    END
+    ELSE
+    BEGIN
+        SELECT 'Usuario o contraseña inválidos' AS Mensaje, 0 AS Acceso;
+    END
+END;
+GO
+
 CREATE OR ALTER PROCEDURE EstadisticaProveedores
     @Nombre NVARCHAR(100) = NULL,
     @Categoria NVARCHAR(100) = NULL,
     @Flag INT = 1   -- 1=Todos, 2=SanJose, 3=Limon
 AS
 BEGIN
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
---Tablas temporales
+    -- Tablas temporales
     CREATE TABLE #StockItems (
         StockItemID INT,
         StockItemName NVARCHAR(100),
         UnitPrice DECIMAL(18,2)
     );
---DESKTOP-BE6OQQA\NODO_CORPORATIVO
+
     CREATE TABLE #StockGroups (
         StockGroupID INT,
         StockGroupName NVARCHAR(100)
@@ -22,123 +82,100 @@ BEGIN
         StockGroupID INT
     );
 
+    -- StockItems
     INSERT INTO #StockItems
     SELECT StockItemID, StockItemName, UnitPrice
     FROM (
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
-                'SELECT StockItemID, StockItemName, UnitPrice 
-                 FROM SanJose.Warehouse.StockItems')
+            'SELECT StockItemID, StockItemName, UnitPrice 
+             FROM SanJose.Warehouse.StockItems')
         WHERE @Flag = 1 OR @Flag = 2
 
         UNION ALL
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
-                'SELECT StockItemID, StockItemName, UnitPrice 
-                 FROM Limon.Warehouse.StockItems')
+            'SELECT StockItemID, StockItemName, UnitPrice 
+             FROM Limon.Warehouse.StockItems')
         WHERE @Flag = 1 OR @Flag = 3
     ) AS Temp;
 
-
+    -- StockGroups
     INSERT INTO #StockGroups
     SELECT StockGroupID, StockGroupName
-    FROM (SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
-                'SELECT StockGroupID, StockGroupName 
-                 FROM SanJose.Warehouse.StockGroups')
+    FROM (
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
+            'SELECT StockGroupID, StockGroupName 
+             FROM SanJose.Warehouse.StockGroups')
         WHERE @Flag = 1 OR @Flag = 2
 
         UNION ALL
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
-                'SELECT StockGroupID, StockGroupName 
-                 FROM Limon.Warehouse.StockGroups')
+            'SELECT StockGroupID, StockGroupName 
+             FROM Limon.Warehouse.StockGroups')
         WHERE @Flag = 1 OR @Flag = 3
     ) AS Temp;
 
-
+    -- StockItemStockGroups
     INSERT INTO #StockItemStockGroups
     SELECT StockItemID, StockGroupID
-    FROM (SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
-                'SELECT StockItemID, StockGroupID 
-                 FROM SanJose.Warehouse.StockItemStockGroups')
+    FROM (
+        SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
+            'SELECT StockItemID, StockGroupID 
+             FROM SanJose.Warehouse.StockItemStockGroups')
         WHERE @Flag = 1 OR @Flag = 2
 
         UNION ALL
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
-                'SELECT StockItemID, StockGroupID 
-                 FROM Limon.Warehouse.StockItemStockGroups')
+            'SELECT StockItemID, StockGroupID 
+             FROM Limon.Warehouse.StockItemStockGroups')
         WHERE @Flag = 1 OR @Flag = 3
     ) AS Temp;
 
-
+    -- Resultados
     SELECT 
-        CASE 
-            WHEN s.SupplierName IS NULL THEN 'Total General'
-            ELSE s.SupplierName
-        END AS NombreProveedor,
-
+        CASE WHEN s.SupplierName IS NULL THEN 'Total General' ELSE s.SupplierName END AS NombreProveedor,
         CASE
             WHEN sg.StockGroupName IS NULL AND s.SupplierName IS NOT NULL THEN 'Estadísticas por Categoría del Proveedor'
             WHEN sg.StockGroupName IS NULL AND s.SupplierName IS NULL THEN ''
             ELSE sg.StockGroupName
         END AS Categoria,
-
         MAX(si.UnitPrice * pol.ReceivedOuters) AS MontoMaximo,
         MIN(si.UnitPrice * pol.ReceivedOuters) AS MontoMinimo,
         AVG(si.UnitPrice * pol.ReceivedOuters) AS MontoPromedio
-
     FROM Purchasing.PurchaseOrders po
     JOIN Purchasing.Suppliers s ON po.SupplierID = s.SupplierID
     JOIN Purchasing.PurchaseOrderLines pol ON po.PurchaseOrderID = pol.PurchaseOrderID
-
     JOIN #StockItems si ON pol.StockItemID = si.StockItemID
     JOIN #StockItemStockGroups sisg ON si.StockItemID = sisg.StockItemID
     JOIN #StockGroups sg ON sisg.StockGroupID = sg.StockGroupID
-
     WHERE (@Nombre IS NULL OR s.SupplierName LIKE '%' + @Nombre + '%')
       AND (@Categoria IS NULL OR sg.StockGroupName LIKE '%' + @Categoria + '%')
-
     GROUP BY ROLLUP (s.SupplierName, sg.StockGroupName)
-
     ORDER BY s.SupplierName ASC, sg.StockGroupName DESC;
 
 END;
 GO
 
-CREATE PROCEDURE EstadisticasVentasClientes
+
+CREATE OR ALTER PROCEDURE EstadisticasVentasClientes
     @Cliente NVARCHAR(100) = NULL,
     @Categoria NVARCHAR(100) = NULL,
-    @Flag INT = 1 -- 1=Ambas, 2=SanJose, 3=Limon
+    @Flag INT = 1
 AS
 BEGIN
--- Tablas temporales
-    DECLARE @Invoices TABLE (
-        InvoiceID INT,
-        CustomerID INT
-    );
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
-    DECLARE @InvoiceLines TABLE (
-        InvoiceID INT,
-        LineProfit DECIMAL(18,2)
-    );
-
-    DECLARE @CustomerCategories TABLE (
-        CustomerCategoryID INT,
-        CustomerCategoryName NVARCHAR(100)
-    );
-
-    DECLARE @Customers_Corporativo TABLE (
-        CustomerID INT,
-        CustomerName NVARCHAR(100)
-    );
-
-    DECLARE @Customers_Sucursal TABLE (
-        CustomerID INT,
-        CustomerCategoryID INT
-    );
+    DECLARE @Invoices TABLE (InvoiceID INT, CustomerID INT);
+    DECLARE @InvoiceLines TABLE (InvoiceID INT, LineProfit DECIMAL(18,2));
+    DECLARE @CustomerCategories TABLE (CustomerCategoryID INT, CustomerCategoryName NVARCHAR(100));
+    DECLARE @Customers_Corporativo TABLE (CustomerID INT, CustomerName NVARCHAR(100));
+    DECLARE @Customers_Sucursal TABLE (CustomerID INT, CustomerCategoryID INT);
 
     INSERT INTO @Customers_Corporativo
     SELECT CustomerID, CustomerName
     FROM CORPORATIVO.Sales.Customers;
 
-    IF @Flag =1 OR @Flag = 2
+    -- SAN JOSE
+    IF @Flag = 1 OR @Flag = 2
     BEGIN
         INSERT INTO @Invoices
         SELECT InvoiceID, CustomerID
@@ -161,6 +198,7 @@ BEGIN
             'SELECT CustomerCategoryID, CustomerCategoryName FROM SanJose.Sales.CustomerCategories');
     END
 
+    -- LIMON
     IF @Flag = 1 OR @Flag = 3
     BEGIN
         INSERT INTO @Invoices
@@ -182,10 +220,8 @@ BEGIN
         SELECT CustomerCategoryID, CustomerCategoryName
         FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT CustomerCategoryID, CustomerCategoryName FROM Limon.Sales.CustomerCategories');
-    END
-
-
-    ;WITH Subtotales AS (
+    END;
+	WITH Subtotales AS (
         SELECT
             c.CustomerName,
             cc.CustomerCategoryName,
@@ -227,13 +263,16 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE Top5ProductosPorGanancia
+CREATE OR ALTER PROCEDURE Top5ProductosPorGanancia
     @AnioInicio INT = NULL,
     @AnioFin INT = NULL,
     @Flag INT = 1 -- 1 = Ambas, 2 = San Jose, 3 = Limon
 AS
 BEGIN
--- Tablas Temporales
+    -- Nivel de aislamiento para evitar bloqueos
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    -- Tablas Temporales
     DECLARE @Invoices TABLE (
         InvoiceID INT,
         InvoiceDate DATE
@@ -250,7 +289,8 @@ BEGIN
         StockItemName NVARCHAR(200),
         TypicalWeightPerUnit DECIMAL(18,2)
     );
--- AMBAS
+
+    -- AMBAS
     IF @Flag = 1
     BEGIN
         -- SAN JOSE
@@ -267,6 +307,7 @@ BEGIN
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT StockItemID, StockItemName, TypicalWeightPerUnit
               FROM SanJose.Warehouse.StockItems');
+
         -- LIMON
         INSERT INTO @Invoices
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
@@ -282,7 +323,8 @@ BEGIN
             'SELECT StockItemID, StockItemName, TypicalWeightPerUnit
               FROM Limon.Warehouse.StockItems');
     END
--- Caso San Jose
+
+    -- SOLO SAN JOSE
     IF @Flag = 2
     BEGIN
         INSERT INTO @Invoices
@@ -300,7 +342,7 @@ BEGIN
               FROM SanJose.Warehouse.StockItems');
     END
 
--- Caso Limon
+    -- SOLO LIMON
     IF @Flag = 3
     BEGIN
         INSERT INTO @Invoices
@@ -317,34 +359,41 @@ BEGIN
             'SELECT StockItemID, StockItemName, TypicalWeightPerUnit
               FROM Limon.Warehouse.StockItems');
     END;
-	SELECT *
-	FROM (
-			SELECT
-				YEAR(i.InvoiceDate) AS Anio,
-				si.StockItemName AS Producto,
-				SUM(il.UnitPrice * il.Quantity) AS GananciaTotal,
-				DENSE_RANK() OVER (
-					PARTITION BY YEAR(i.InvoiceDate)
-					ORDER BY SUM(il.Quantity * il.UnitPrice * (1 + (il.TaxRate / 100))) DESC
-				) AS Posicion
-			FROM @Invoices i
-			JOIN @InvoiceLines il ON i.InvoiceID = il.InvoiceID
-			JOIN @StockItems si ON il.StockItemID = si.StockItemID
-			GROUP BY YEAR(i.InvoiceDate), si.StockItemName
-			HAVING SUM((il.UnitPrice - si.TypicalWeightPerUnit) * il.Quantity) > 0
-		) Query
-	WHERE Query.Posicion <=5 AND (@AnioInicio IS NULL OR Anio >= @AnioInicio) AND (@AnioFin IS NULL OR Anio <= @AnioFin)
-	ORDER BY Anio,Query.Posicion
+
+    SELECT *
+    FROM (
+        SELECT
+            YEAR(i.InvoiceDate) AS Anio,
+            si.StockItemName AS Producto,
+            SUM(il.UnitPrice * il.Quantity) AS GananciaTotal,
+            DENSE_RANK() OVER (
+                PARTITION BY YEAR(i.InvoiceDate)
+                ORDER BY SUM(il.Quantity * il.UnitPrice * (1 + (il.TaxRate / 100))) DESC
+            ) AS Posicion
+        FROM @Invoices i
+        JOIN @InvoiceLines il ON i.InvoiceID = il.InvoiceID
+        JOIN @StockItems si ON il.StockItemID = si.StockItemID
+        GROUP BY YEAR(i.InvoiceDate), si.StockItemName
+        HAVING SUM((il.UnitPrice - si.TypicalWeightPerUnit) * il.Quantity) > 0
+    ) Query
+    WHERE Query.Posicion <= 5
+      AND (@AnioInicio IS NULL OR Anio >= @AnioInicio)
+      AND (@AnioFin IS NULL OR Anio <= @AnioFin)
+    ORDER BY Anio, Query.Posicion;
+
 END;
 GO
 
-CREATE PROCEDURE Top5ClientesPorFacturas
+
+CREATE OR ALTER PROCEDURE Top5ClientesPorFacturas
     @AnioInicio INT = NULL,
     @AnioFin INT = NULL,
-    @Flag INT = 1 -- 1 = Todas, 2 = SanJose, 3 = Limon
+    @Flag INT = 1
 AS
 BEGIN
---Tablas Temporales
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
     DECLARE @Invoices TABLE (
         InvoiceID INT,
         CustomerID INT,
@@ -363,8 +412,6 @@ BEGIN
         CustomerName NVARCHAR(100)
     );
 
-
---Caso Todos
     IF @Flag = 1
     BEGIN
         INSERT INTO @Invoices
@@ -386,10 +433,8 @@ BEGIN
         INSERT INTO @InvoiceLines
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
             'SELECT InvoiceID, Quantity, UnitPrice, TaxRate FROM Limon.Sales.InvoiceLines');
-
     END
 
---Caso San Jose
     IF @Flag = 2
     BEGIN
         INSERT INTO @Invoices
@@ -399,10 +444,8 @@ BEGIN
         INSERT INTO @InvoiceLines
         SELECT * FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
             'SELECT InvoiceID, Quantity, UnitPrice, TaxRate FROM SanJose.Sales.InvoiceLines');
-
     END
 
---Caso Limon
     IF @Flag = 3
     BEGIN
         INSERT INTO @Invoices
@@ -447,21 +490,23 @@ BEGIN
         MontoTotalFacturado,
         Posicion
     FROM TotalesPorCliente
-    WHERE 
-        Posicion <= 5
-        AND (@AnioInicio IS NULL OR Anio >= @AnioInicio)
-        AND (@AnioFin IS NULL OR Anio <= @AnioFin)
+    WHERE Posicion <= 5
+      AND (@AnioInicio IS NULL OR Anio >= @AnioInicio)
+      AND (@AnioFin IS NULL OR Anio <= @AnioFin)
     ORDER BY Anio ASC, CantidadFacturas DESC;
 
 END;
 GO
 
-CREATE PROCEDURE Top5ProveedoresPorOrdenes
+CREATE OR ALTER PROCEDURE Top5ProveedoresPorOrdenes
     @AnioInicio INT = NULL,
     @AnioFin INT = NULL,
-    @Flag INT = 1   -- 1 = todos, 2 = San José, 3 = Limón
+    @Flag INT = 1
 AS
 BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
     DECLARE @StockItems TABLE (
         StockItemID INT,
         StockItemName NVARCHAR(200),
@@ -469,7 +514,6 @@ BEGIN
         TaxRate DECIMAL(18,5)
     );
 
--- Caso Todos
     IF @Flag = 1
     BEGIN
         INSERT INTO @StockItems
@@ -482,7 +526,7 @@ BEGIN
             'SELECT StockItemID, StockItemName, UnitPrice, TaxRate  
              FROM SanJose.Warehouse.StockItems');
     END
---Caso San Jose
+
     IF @Flag = 2
     BEGIN
         INSERT INTO @StockItems
@@ -490,7 +534,7 @@ BEGIN
             'SELECT StockItemID, StockItemName, UnitPrice, TaxRate  
              FROM SanJose.Warehouse.StockItems');
     END
---Caso Limon
+
     IF @Flag = 3
     BEGIN
         INSERT INTO @StockItems
@@ -540,91 +584,3 @@ BEGIN
 
 END;
 GO
-
-
-CREATE PROCEDURE GetClientes
-    @CustomerID INT = NULL,
-    @Nombre NVARCHAR(100) = NULL,
-    @Flag INT = 1   -- 1=Todos, 2=SANJOSE, 3=LIMON
-AS
-BEGIN
-
-    DECLARE @CustomersCorporativo TABLE (
-        CustomerID INT,
-        CustomerName NVARCHAR(100),
-        PrimaryContactPersonID INT,
-        AlternateContactPersonID INT,
-        PhoneNumber NVARCHAR(20),
-        FaxNumber NVARCHAR(20),
-        WebsiteURL NVARCHAR(256),
-        DeliveryAddressLine1 NVARCHAR(60),
-        DeliveryAddressLine2 NVARCHAR(60),
-        DeliveryPostalCode NVARCHAR(10),
-        DeliveryCityID INT,
-        PostalCityID INT
-    );
-
-    DECLARE @CustomersSucursales TABLE (
-        CustomerID INT,
-        CustomerName NVARCHAR(100),
-        BuyingGroupID INT,
-        CustomerCategoryID INT,
-        BillToCustomerID INT,
-        CreditLimit DECIMAL(18,2),
-        PaymentDays INT,
-        AccountOpenedDate DATE,
-        DeliveryMethodID INT,
-        Sucursal NVARCHAR(20)
-    );
-    IF @Flag =1 OR @Flag = 2
-    BEGIN
-        INSERT INTO @CustomersSucursales
-        SELECT *, 'SANJOSE'
-        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_SANJOSE],
-            'SELECT CustomerID, CustomerName, BuyingGroupID, CustomerCategoryID,
-                    BillToCustomerID, CreditLimit, PaymentDays, AccountOpenedDate,
-                    DeliveryMethodID
-             FROM SANJOSE.Sales.Customers'
-        );
-    END
-
-    IF @Flag = 1 OR @Flag = 3
-    BEGIN
-        INSERT INTO @CustomersSucursales
-        SELECT *, 'LIMON'
-        FROM OPENQUERY([DESKTOP-BE6OQQA\NODO_LIMON],
-            'SELECT CustomerID, CustomerName, BuyingGroupID, CustomerCategoryID,
-                    BillToCustomerID, CreditLimit, PaymentDays, AccountOpenedDate,
-                    DeliveryMethodID
-             FROM LIMON.Sales.Customers'
-        );
-    END
-
-    SELECT 
-        bc.Sucursal,
-        bc.CustomerID,
-        cc.CustomerName,
-        cc.PhoneNumber,
-        cc.FaxNumber,
-        cc.WebsiteURL,
-        cc.DeliveryAddressLine1,
-        cc.DeliveryAddressLine2,
-        cc.DeliveryPostalCode,
-        cc.DeliveryCityID,
-        cc.PostalCityID,
-        bc.CustomerCategoryID,
-        bc.CreditLimit,
-        bc.PaymentDays,
-        bc.AccountOpenedDate,
-        bc.DeliveryMethodID
-    FROM @CustomersSucursales bc
-    INNER JOIN @CustomersCorporativo cc ON cc.CustomerID = bc.CustomerID
-    WHERE 
-        (@CustomerID IS NULL OR bc.CustomerID = @CustomerID)
-        AND (@Nombre IS NULL OR cc.CustomerName LIKE '%' + @Nombre + '%')
-    ORDER BY cc.CustomerName;
-
-END;
-GO
-
-		 
