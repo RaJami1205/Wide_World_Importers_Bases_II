@@ -4,10 +4,15 @@ const app = express();
 const sql = require('mssql');
 const config = require('./db');
 
+app.use(express.json());
+
 app.use(cors({
   origin: true, // permite el origen que venga en la petición
   credentials: true
 }));
+
+const loginRoutes = require('./routes/login');
+app.use('/api/login', loginRoutes);
 
 // Importar las rutas
 const clientesRoutes = require('./routes/clientes');
