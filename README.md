@@ -1,27 +1,28 @@
 # Wide World Importers - Sistema Web de Bases de Datos Distribuidas 🌐📊
 
-Este repositorio contiene el **Proyecto Semestral de Bases de Datos II**, un sistema web Fullstack enfocado en la implementación, gestión y consulta de una arquitectura de **base de datos distribuida, fragmentada y replicada** utilizando como entorno de datos **SQL Server**.
+Este repositorio contiene el **Proyecto Semestral de Bases de Datos II**, un sistema web Fullstack enfocado en la implementación, gestión y consulta de una arquitectura de **base de datos distribuida, fragmentada y replicada** mediante un entorno de infraestructura virtualizado con contenedores.
 
-El proyecto simula la operación transaccional y analítica de múltiples sucursales de la empresa ficticia *Wide World Importers*, centralizando la lógica de datos mediante una API REST y exponiendo una interfaz web intuitiva.
+El proyecto simula la operación transaccional y analítica de múltiples sucursales independientes de la empresa ficticia *Wide World Importers*, centralizando la lógica mediante una API REST y exponiendo una interfaz web intuitiva.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🛠️ Stack Tecnológico e Infraestructura
 
-*   **Frontend:** React.js + Vite, JavaScript, CSS / HTML5.
+*   **Infraestructura y Virtualización:** Docker (3 contenedores independientes), WSL2 (Windows Subsystem for Linux).
+*   **Base de Datos:** SQL Server para Linux (Imágenes oficiales en contenedores) utilizando Transact-SQL.
 *   **Backend (API):** Node.js + Express.js.
-*   **Base de Datos:** SQL Server (Transact-SQL).
-*   **Lógica de Datos Avanzada:** Fragmentación horizontal/vertical, replicación de datos e interconexión distribuida de sucursales.
+*   **Frontend:** React.js + Vite, JavaScript, CSS / HTML5.
+*   **Lógica de Datos Avanzada:** Fragmentación horizontal/vertical, replicación de datos e interconexión distribuida entre contenedores.
 
 ---
 
-## 🏗️ Arquitectura del Sistema y Datos
+## 🏗️ Arquitectura de Infraestructura y Red (Contenedores)
 
-El núcleo del proyecto radica en la estrategia de almacenamiento distribuido diseñado para optimizar el rendimiento y la disponibilidad entre nodos:
+Para simular de manera realista la descentralización física de las sucursales sin depender de hardware físico adicional, el entorno se diseñó utilizando una arquitectura de microservicios locales:
 
-1. **Diseño de Base de Datos Distribuidia:** Configuración de múltiples servidores de SQL Server que actúan como sucursales independientes pero interconectadas.
-2. **Fragmentación:** División lógica de las tablas transaccionales de la base de datos de plantilla *Wide World Importers* para distribuir la carga según criterios geográficos o de sucursal.
-3. **Replicación:** Mecanismos de copia de tablas críticas de catálogo para asegurar tolerancia a fallos y lecturas rápidas a nivel local en cada nodo.
+1. **Entorno WSL2:** Ejecución nativa del motor de Docker sobre el subsistema de Linux para optimizar el rendimiento de E/S.
+2. **Nodos Distribuidos (Docker):** Despliegue de **3 contenedores Docker independientes**, cada uno instanciando una imagen oficial de SQL Server que representa una sucursal única o nodo central.
+3. **Red Virtual y Conectividad:** Interconexión de los contenedores mediante una red puente personalizada de Docker, permitiendo que la API REST de Node.js enrute las consultas transaccionales de forma aislada a cada base de datos según las reglas de fragmentación y replicación.
 
 ---
 
@@ -29,18 +30,19 @@ El núcleo del proyecto radica en la estrategia de almacenamiento distribuido di
 
 El proyecto está modularizado de forma clara para separar las responsabilidades de infraestructura, servidor y cliente:
 
-*   **`Script sql/`**: Contiene los scripts transaccionales en T-SQL necesarios para estructurar las bases de datos locales, configurar los servidores vinculados (Linked Servers), y definir las vistas e instrucciones distribuidas.
+*   **`Script sql/`**: Contiene los scripts transaccionales en T-SQL necesarios para estructurar las bases de datos en los contenedores, configurar servidores vinculados (Linked Servers), y definir las vistas distribuidas.
 *   **`API/`**: Backend desarrollado en Node.js y Express.
     *   `app.js`: Servidor y configurador principal de los middlewares.
-    *   `routes/`: Enrutamiento lógico que expone los endpoints de autenticación (Login), consultas a las sucursales y operaciones CRUD distribuidas.
-*   **`appweb/`**: Frontend desarrollado en React. Componentes de interfaz de usuario para el inicio de sesión, visualización de inventarios, gestión de reportes y monitoreo de las transacciones entre sucursales.
+    *   `routes/`: Enrutamiento lógico que expone los endpoints de autenticación (Login), consultas dirigidas a los contenedores de las sucursales y operaciones CRUD distribuidas.
+*   **`appweb/`**: Frontend desarrollado en React. Componentes de interfaz de usuario para el inicio de sesión, visualización de inventarios y monitoreo de transacciones.
 
 ---
 
 ## 🚀 Estado actual del Desarrollo
 
 El proyecto demuestra las bases técnicas e infraestructura esenciales de un sistema distribuido:
-*   [x] Diseño conceptual y scripts SQL iniciales de replicación/fragmentación.
-*   [x] Configuración de la API y conexión con las instancias de bases de datos (levemente desarrollada).
+*   [x] Orquestación e instanciación de los 3 nodos de SQL Server en Docker bajo WSL2.
+*   [x] Diseño conceptual y scripts SQL de replicación/fragmentación cruzada.
+*   [x] Configuración de la API y conexión con los puertos expuestos de los contenedores (levemente desarrollado).
 *   [x] Interfaz de usuario (Frontend) funcional con vistas de autenticación y paneles base.
-*   [ ] Optimización final de consultas cruzadas distribuidas y flujos transaccionales avanzados.
+*   [ ] Optimización final de consultas cruzadas distribuidas y flujos transaccionales avanzados *(No logrado)*.
